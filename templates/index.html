@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Enter Answers · SAT Math Score Tool{% endblock %}
+{% block content %}
+  <section class="card">
+    <h2>Enter student responses</h2>
+    <p>Provide the student name and answer choice (A–E) for each question. Leave a response blank to mark it as omitted.</p>
+    <form method="post" action="{{ url_for('results') }}" class="answer-form">
+      <div class="form-field">
+        <label for="student_name">Student name</label>
+        <input type="text" name="student_name" id="student_name" placeholder="e.g. Jordan" />
+      </div>
+      <div class="question-grid">
+        {% for question in questions %}
+          <div class="question-field">
+            <label for="q_{{ question.number }}">Question {{ question.number }}</label>
+            <input
+              type="text"
+              inputmode="text"
+              maxlength="1"
+              pattern="[A-Ea-e]"
+              name="q_{{ question.number }}"
+              id="q_{{ question.number }}"
+              placeholder="A–E"
+            />
+          </div>
+        {% endfor %}
+      </div>
+      <div class="form-actions">
+        <button type="submit">Generate score report</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

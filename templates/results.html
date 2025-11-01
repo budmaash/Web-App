@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Score Report · SAT Math Score Tool{% endblock %}
+{% block content %}
+  <section class="card">
+    <h2>Score report for {{ student_name }}</h2>
+    <div class="score-summary">
+      <p><strong>Total correct:</strong> {{ report.correct_count }} / {{ report.total_questions }}</p>
+      <p><strong>Accuracy:</strong> {{ '%.1f'|format(report.accuracy_pct) }}%</p>
+      <p><strong>Estimated SAT Math score:</strong> {{ report.scaled_score }}</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Category breakdown</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Correct</th>
+            <th>Total</th>
+            <th>Accuracy</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in report.category_breakdown %}
+            <tr>
+              <td>{{ category.category }}</td>
+              <td>{{ category.correct }}</td>
+              <td>{{ category.total }}</td>
+              <td>{{ '%.1f'|format(category.accuracy_pct) }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Question review</h3>
+    <div class="table-wrapper">
+      <table class="question-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Your answer</th>
+            <th>Correct answer</th>
+            <th>Category</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in report.per_question %}
+            <tr class="{{ 'correct' if row.is_correct else 'incorrect' }}">
+              <td>{{ row.number }}</td>
+              <td>{{ row.student_answer }}</td>
+              <td>{{ row.correct_answer }}</td>
+              <td>{{ row.category }}</td>
+              <td>
+                {% if row.is_correct %}
+                  ✅ Correct
+                {% elif row.student_answer == '—' %}
+                  ◻️ Omitted
+                {% else %}
+                  ❌ Incorrect
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="form-actions">
+      <a href="{{ url_for('index') }}" class="button">Score another student</a>
+    </div>
+  </section>
+{% endblock %}
