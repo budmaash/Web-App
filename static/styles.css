@@ -177,6 +177,38 @@ table thead {
   background-color: #f1f5f9;
 }
 
+.answer-table th:first-child {
+  text-align: left;
+}
+
+.answer-table .choice-heading,
+.answer-table .choice-cell {
+  text-align: center;
+}
+
+.choice-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.choice-label input[type="radio"] {
+  accent-color: #2563eb;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .question-table tr.correct td {
   background-color: #ecfdf5;
 }

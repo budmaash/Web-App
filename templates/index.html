@@ -9,25 +9,37 @@
         <label for="student_name">Student name</label>
         <input type="text" name="student_name" id="student_name" placeholder="e.g. Jordan" />
       </div>
-      <div class="question-grid">
-        {% for question in questions %}
-          <fieldset class="question-field">
-            <legend>Question {{ question.number }}</legend>
-            <div class="answer-options" role="group" aria-label="Answer choices for question {{ question.number }}">
+      <div class="table-wrapper">
+        <table class="answer-table">
+          <thead>
+            <tr>
+              <th scope="col">Question</th>
               {% for choice in ['A', 'B', 'C', 'D'] %}
-                <div class="answer-option">
-                  <input
-                    type="radio"
-                    name="q_{{ question.number }}"
-                    id="q_{{ question.number }}_{{ choice }}"
-                    value="{{ choice }}"
-                  />
-                  <label for="q_{{ question.number }}_{{ choice }}">{{ choice }}</label>
-                </div>
+                <th scope="col" class="choice-heading">{{ choice }}</th>
               {% endfor %}
-            </div>
-          </fieldset>
-        {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for question in questions %}
+              <tr>
+                <th scope="row">{{ question.number }}</th>
+                {% for choice in ['A', 'B', 'C', 'D'] %}
+                  <td class="choice-cell">
+                    <label class="choice-label" for="q_{{ question.number }}_{{ choice }}">
+                      <input
+                        type="radio"
+                        name="q_{{ question.number }}"
+                        id="q_{{ question.number }}_{{ choice }}"
+                        value="{{ choice }}"
+                      />
+                      <span class="sr-only">Choice {{ choice }}</span>
+                    </label>
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
       <div class="form-actions">
         <button type="submit">Generate score report</button>
