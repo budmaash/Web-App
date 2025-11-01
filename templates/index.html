@@ -3,7 +3,11 @@
 {% block content %}
   <section class="card">
     <h2>Enter student responses</h2>
-    <p>Select the student name and answer choice (A–D) for each question. Leave a question unanswered to mark it as omitted.</p>
+    <p>
+      Select the student name, then choose the answer for each question. Multiple-choice
+      questions use options A–D, while grid-in questions accept a numeric response. Leave a
+      question unanswered to mark it as omitted.
+    </p>
     {% if tests %}
       <form method="get" class="test-select-form">
         <div class="form-field">
@@ -41,19 +45,34 @@
               {% for question in questions %}
                 <tr>
                   <th scope="row">{{ question.number }}</th>
-                  {% for choice in ['A', 'B', 'C', 'D'] %}
-                    <td class="choice-cell">
-                      <label class="choice-label" for="q_{{ question.number }}_{{ choice }}">
-                        <input
-                          type="radio"
-                          name="q_{{ question.number }}"
-                          id="q_{{ question.number }}_{{ choice }}"
-                          value="{{ choice }}"
-                        />
-                        <span class="sr-only">Choice {{ choice }}</span>
-                      </label>
+                  {% if question.expects_numeric_response %}
+                    <td class="free-response-cell" colspan="4">
+                      <label class="sr-only" for="q_{{ question.number }}">Numeric response</label>
+                      <input
+                        type="text"
+                        name="q_{{ question.number }}"
+                        id="q_{{ question.number }}"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        class="free-response-input"
+                        placeholder="Enter answer"
+                      />
                     </td>
-                  {% endfor %}
+                  {% else %}
+                    {% for choice in ['A', 'B', 'C', 'D'] %}
+                      <td class="choice-cell">
+                        <label class="choice-label" for="q_{{ question.number }}_{{ choice }}">
+                          <input
+                            type="radio"
+                            name="q_{{ question.number }}"
+                            id="q_{{ question.number }}_{{ choice }}"
+                            value="{{ choice }}"
+                          />
+                          <span class="sr-only">Choice {{ choice }}</span>
+                        </label>
+                      </td>
+                    {% endfor %}
+                  {% endif %}
                 </tr>
               {% endfor %}
             </tbody>

@@ -210,6 +210,18 @@ table thead {
   text-align: center;
 }
 
+.free-response-cell {
+  text-align: center;
+}
+
+.free-response-input {
+  width: min(180px, 100%);
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5f5;
+  font-size: 1rem;
+}
+
 .choice-label {
   display: inline-flex;
   align-items: center;

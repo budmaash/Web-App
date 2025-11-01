@@ -18,6 +18,7 @@ class Question:
     number: int
     correct_answer: str
     category: str
+    expects_numeric_response: bool
 
 
 app = Flask(__name__)
@@ -82,7 +83,9 @@ class QuestionBank:
                         "Each question must include a numeric 'question_number'."
                     ) from exc
 
-                correct_answer = row.get("correct_answer", "").strip().upper()
+                raw_answer = row.get("correct_answer", "").strip()
+                expects_numeric_response = _is_numeric_answer(raw_answer)
+                correct_answer = raw_answer.upper() if not expects_numeric_response else raw_answer
                 if not correct_answer:
                     raise ValueError(
                         f"Question {number} is missing a 'correct_answer' entry."
@@ -94,7 +97,14 @@ class QuestionBank:
                         f"Question {number} is missing a 'category' entry."
                     )
 
-                questions.append(Question(number=number, correct_answer=correct_answer, category=category))
+                questions.append(
+                    Question(
+                        number=number,
+                        correct_answer=correct_answer,
+                        category=category,
+                        expects_numeric_response=expects_numeric_response,
+                    )
+                )
 
         questions.sort(key=lambda q: q.number)
         return questions
@@ -161,6 +171,29 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
 question_bank = QuestionBank(DATA_DIR)
 
 
+def _is_numeric_answer(value: str) -> bool:
+    if not value:
+        return False
+
+    trimmed = value.strip()
+    if not trimmed:
+        return False
+
+    # Allow negative values and decimal points when determining if the answer
+    # represents a numeric response. Digits remain untouched later, so we don't
+    # coerce the value into a number here.
+    if trimmed.count("-") > 1:
+        return False
+    if trimmed.startswith("-"):
+        trimmed = trimmed[1:]
+
+    if trimmed.count(".") > 1:
+        return False
+    trimmed = trimmed.replace(".", "")
+
+    return trimmed.isdigit()
+
+
 @app.get("/")
 def index():
     tests = question_bank.available_tests()
@@ -202,7 +235,9 @@ def results():
 
     answers: Dict[int, str] = {}
     for question in questions:
-        answer = request.form.get(f"q_{question.number}", "").strip().upper()
+        answer = request.form.get(f"q_{question.number}", "").strip()
+        if not question.expects_numeric_response:
+            answer = answer.upper()
         answers[question.number] = answer
 
     report = build_score_report(answers, questions)
