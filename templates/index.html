@@ -3,7 +3,7 @@
 {% block content %}
   <section class="card">
     <h2>Enter student responses</h2>
-    <p>Provide the student name and answer choice (A–E) for each question. Leave a response blank to mark it as omitted.</p>
+    <p>Select the student name and answer choice (A–D) for each question. Leave a question unanswered to mark it as omitted.</p>
     <form method="post" action="{{ url_for('results') }}" class="answer-form">
       <div class="form-field">
         <label for="student_name">Student name</label>
@@ -11,18 +11,22 @@
       </div>
       <div class="question-grid">
         {% for question in questions %}
-          <div class="question-field">
-            <label for="q_{{ question.number }}">Question {{ question.number }}</label>
-            <input
-              type="text"
-              inputmode="text"
-              maxlength="1"
-              pattern="[A-Ea-e]"
-              name="q_{{ question.number }}"
-              id="q_{{ question.number }}"
-              placeholder="A–E"
-            />
-          </div>
+          <fieldset class="question-field">
+            <legend>Question {{ question.number }}</legend>
+            <div class="answer-options" role="group" aria-label="Answer choices for question {{ question.number }}">
+              {% for choice in ['A', 'B', 'C', 'D'] %}
+                <div class="answer-option">
+                  <input
+                    type="radio"
+                    name="q_{{ question.number }}"
+                    id="q_{{ question.number }}_{{ choice }}"
+                    value="{{ choice }}"
+                  />
+                  <label for="q_{{ question.number }}_{{ choice }}">{{ choice }}</label>
+                </div>
+              {% endfor %}
+            </div>
+          </fieldset>
         {% endfor %}
       </div>
       <div class="form-actions">

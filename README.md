@@ -4,7 +4,7 @@ This project provides a lightweight web application for entering student respons
 
 ## Features
 
-- ✅ Enter answers for each question using a simple web form
+- ✅ Enter answers for each question using a simple multiple-choice web form
 - 📊 Instant score report with estimated scaled SAT Math score
 - 🗂️ Category breakdown that mirrors the categories defined in your spreadsheet
 - 🔁 Quickly rescore another student without reloading the page
@@ -49,7 +49,7 @@ This project provides a lightweight web application for entering student respons
 Replace the sample `data/questions.csv` file with your own spreadsheet exported to CSV format. The file must include the following columns:
 
 - `question_number` – The numeric identifier of the question (e.g. 1, 2, …)
-- `correct_answer` – The correct answer choice (A–E)
+- `correct_answer` – The correct answer choice (A–D)
 - `category` – The category label to use in the score report
 
 Additional columns are ignored, so you can keep extra metadata in the spreadsheet without breaking the importer.
