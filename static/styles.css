@@ -205,6 +205,18 @@ table thead {
   text-align: left;
 }
 
+.answer-table th,
+.answer-table td {
+  padding: 0.5rem 0.6rem;
+}
+
+.answer-table th:first-child {
+  padding-left: 0.75rem;
+  padding-right: 0.6rem;
+  white-space: nowrap;
+  width: 1%;
+}
+
 .answer-table .choice-heading,
 .answer-table .choice-cell {
   text-align: center;
