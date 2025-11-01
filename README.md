@@ -5,6 +5,7 @@ This project provides a lightweight web application for entering student respons
 ## Features
 
 - ✅ Enter answers for each question using a simple multiple-choice or numeric-entry web form
+- 🎯 Handle grid-in questions with alternate numeric answers (e.g. `5;5.0`)
 - 📊 Instant score report with estimated scaled SAT Math score
 - 🗂️ Category breakdown that mirrors the categories defined in your spreadsheet
 - 📝 Choose from any CSV answer keys stored in the `data/` directory
@@ -50,7 +51,7 @@ This project provides a lightweight web application for entering student respons
 Place one or more CSV files inside the `data/` directory—each file represents a different test. The filename is displayed in the UI (underscores are converted to spaces), making it easy to switch between practice sets. Every CSV must include the following columns:
 
 - `question_number` – The numeric identifier of the question (e.g. 1, 2, …)
-- `correct_answer` – The correct answer choice (A–D) or numeric value for grid-in questions
+- `correct_answer` – The correct answer choice (A–D) or numeric value for grid-in questions. For grid-ins with multiple acceptable values, separate each option with a semicolon (e.g. `12;12.0`).
 - `category` – The category label to use in the score report
 
 Additional columns are ignored, so you can keep extra metadata in the spreadsheet without breaking the importer. Add, remove, or rename files at any time; the app will automatically list every CSV present when you reload the page.

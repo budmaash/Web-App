@@ -5,7 +5,7 @@ import math
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from flask import Flask, abort, render_template, request
 
@@ -16,9 +16,17 @@ DATA_DIR = Path("data")
 @dataclass
 class Question:
     number: int
-    correct_answer: str
+    correct_answers: List[str]
     category: str
     expects_numeric_response: bool
+
+    @property
+    def display_correct_answer(self) -> str:
+        if not self.correct_answers:
+            return ""
+        if len(self.correct_answers) == 1:
+            return self.correct_answers[0]
+        return " or ".join(self.correct_answers)
 
 
 app = Flask(__name__)
@@ -84,9 +92,8 @@ class QuestionBank:
                     ) from exc
 
                 raw_answer = row.get("correct_answer", "").strip()
-                expects_numeric_response = _is_numeric_answer(raw_answer)
-                correct_answer = raw_answer.upper() if not expects_numeric_response else raw_answer
-                if not correct_answer:
+                answers, expects_numeric_response = _normalize_answers(raw_answer)
+                if not answers:
                     raise ValueError(
                         f"Question {number} is missing a 'correct_answer' entry."
                     )
@@ -100,7 +107,7 @@ class QuestionBank:
                 questions.append(
                     Question(
                         number=number,
-                        correct_answer=correct_answer,
+                        correct_answers=answers,
                         category=category,
                         expects_numeric_response=expects_numeric_response,
                     )
@@ -117,7 +124,7 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
 
     for question in questions:
         student_answer = student_answers.get(question.number, "")
-        is_correct = student_answer == question.correct_answer
+        is_correct = student_answer in question.correct_answers
 
         category_totals[question.category]["total"] += 1
         if is_correct:
@@ -128,7 +135,7 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
             {
                 "number": question.number,
                 "student_answer": student_answer or "—",
-                "correct_answer": question.correct_answer,
+                "correct_answer": question.display_correct_answer,
                 "is_correct": is_correct,
                 "category": question.category,
             }
@@ -171,7 +178,35 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
 question_bank = QuestionBank(DATA_DIR)
 
 
-def _is_numeric_answer(value: str) -> bool:
+def _normalize_answers(raw_answer: str) -> Tuple[List[str], bool]:
+    tokens = [token.strip() for token in raw_answer.split(";")]
+    tokens = [token for token in tokens if token]
+
+    if not tokens:
+        return [], False
+
+    expects_numeric = all(_is_numeric_token(token) for token in tokens)
+
+    if expects_numeric:
+        normalized = [_normalize_numeric_token(token) for token in tokens]
+    else:
+        normalized = [token.upper() for token in tokens]
+
+    deduped: List[str] = []
+    seen = set()
+    for answer in normalized:
+        if answer not in seen:
+            seen.add(answer)
+            deduped.append(answer)
+
+    return deduped, expects_numeric
+
+
+def _normalize_numeric_token(value: str) -> str:
+    return value.strip()
+
+
+def _is_numeric_token(value: str) -> bool:
     if not value:
         return False
 
