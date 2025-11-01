@@ -7,6 +7,7 @@ This project provides a lightweight web application for entering student respons
 - ✅ Enter answers for each question using a simple multiple-choice web form
 - 📊 Instant score report with estimated scaled SAT Math score
 - 🗂️ Category breakdown that mirrors the categories defined in your spreadsheet
+- 📝 Choose from any CSV answer keys stored in the `data/` directory
 - 🔁 Quickly rescore another student without reloading the page
 
 ## Project structure
@@ -15,7 +16,7 @@ This project provides a lightweight web application for entering student respons
 .
 ├── app.py                # Flask application with scoring logic
 ├── data/
-│   └── questions.csv     # Answer key with category metadata
+│   └── *.csv             # One or more answer keys with category metadata
 ├── static/
 │   └── styles.css        # Styling for the UI
 └── templates/
@@ -44,15 +45,15 @@ This project provides a lightweight web application for entering student respons
 
    Visit <http://127.0.0.1:5000> in your browser.
 
-## Customising the answer key
+## Customising the answer keys
 
-Replace the sample `data/questions.csv` file with your own spreadsheet exported to CSV format. The file must include the following columns:
+Place one or more CSV files inside the `data/` directory—each file represents a different test. The filename is displayed in the UI (underscores are converted to spaces), making it easy to switch between practice sets. Every CSV must include the following columns:
 
 - `question_number` – The numeric identifier of the question (e.g. 1, 2, …)
 - `correct_answer` – The correct answer choice (A–D)
 - `category` – The category label to use in the score report
 
-Additional columns are ignored, so you can keep extra metadata in the spreadsheet without breaking the importer.
+Additional columns are ignored, so you can keep extra metadata in the spreadsheet without breaking the importer. Add, remove, or rename files at any time; the app will automatically list every CSV present when you reload the page.
 
 ## How scoring works
 
@@ -62,7 +63,6 @@ Additional columns are ignored, so you can keep extra metadata in the spreadshee
 
 ## Future improvements
 
-- Support for multiple answer keys/tests and student history
 - CSV upload for importing student responses in bulk
 - Authentication for instructors
 

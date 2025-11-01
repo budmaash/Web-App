@@ -76,12 +76,18 @@ main.container {
   margin-bottom: 0.5rem;
 }
 
-.form-field input[type="text"] {
+.form-field input[type="text"],
+.form-field select {
   width: 100%;
   padding: 0.65rem 0.75rem;
   border-radius: 0.5rem;
   border: 1px solid #cbd5f5;
   font-size: 1rem;
+}
+
+.form-field select {
+  background-color: #ffffff;
+  appearance: none;
 }
 
 .question-grid {
@@ -130,6 +136,24 @@ main.container {
   margin-top: 2rem;
   display: flex;
   justify-content: flex-end;
+}
+
+.test-select-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+}
+
+.test-select-form .form-field {
+  flex: 1 1 260px;
+  margin-bottom: 0;
+}
+
+.test-select-form .form-actions {
+  margin-top: 0;
+  justify-content: flex-start;
 }
 
 button,
@@ -226,6 +250,18 @@ table thead {
 
 .score-summary p {
   margin: 0;
+}
+
+.test-meta {
+  margin: 0 0 1rem;
+}
+
+.empty-state {
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5f5;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  font-size: 1rem;
 }
 
 .page-footer p {

@@ -7,10 +7,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
 
-from flask import Flask, render_template, request
+from flask import Flask, abort, render_template, request
 
 
-DATA_FILE = Path("data/questions.csv")
+DATA_DIR = Path("data")
 
 
 @dataclass
@@ -23,26 +23,56 @@ class Question:
 app = Flask(__name__)
 
 
+@dataclass(frozen=True)
+class TestDefinition:
+    identifier: str
+    name: str
+    path: Path
+
+
 class QuestionBank:
-    """Utility responsible for loading and caching questions."""
+    """Utility responsible for loading and caching questions for each test."""
 
-    def __init__(self, data_file: Path) -> None:
-        self._data_file = data_file
-        self._questions: List[Question] | None = None
+    def __init__(self, data_dir: Path) -> None:
+        self._data_dir = data_dir
+        self._questions_cache: Dict[str, List[Question]] = {}
 
-    def all(self) -> List[Question]:
-        if self._questions is None:
-            self._questions = self._load()
-        return self._questions
+    def available_tests(self) -> List[TestDefinition]:
+        tests: List[TestDefinition] = []
 
-    def _load(self) -> List[Question]:
-        if not self._data_file.exists():
+        if not self._data_dir.exists():
+            return tests
+
+        for csv_path in sorted(self._data_dir.glob("*.csv")):
+            identifier = csv_path.stem
+            name = csv_path.stem.replace("_", " ").title()
+            tests.append(TestDefinition(identifier=identifier, name=name, path=csv_path))
+
+        return tests
+
+    def get_test(self, test_id: str) -> TestDefinition:
+        for test in self.available_tests():
+            if test.identifier == test_id:
+                return test
+        raise ValueError(f"Unknown test identifier: {test_id}")
+
+    def questions_for(self, test_id: str) -> List[Question]:
+        if test_id in self._questions_cache:
+            return self._questions_cache[test_id]
+
+        test = self.get_test(test_id)
+        questions = self._load(test.path)
+        self._questions_cache[test_id] = questions
+        return questions
+
+    def _load(self, csv_path: Path) -> List[Question]:
+        if not csv_path.exists():
             raise FileNotFoundError(
-                "Question data file not found. Expected at '{}'".format(self._data_file)
+                "Question data file not found. Expected at '{}'".format(csv_path)
             )
 
         questions: List[Question] = []
-        with self._data_file.open(newline="") as csv_file:
+        with csv_path.open(newline="") as csv_file:
             reader = csv.DictReader(csv_file)
             for row in reader:
                 try:
@@ -128,18 +158,46 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
     }
 
 
-question_bank = QuestionBank(DATA_FILE)
+question_bank = QuestionBank(DATA_DIR)
 
 
 @app.get("/")
 def index():
-    questions = question_bank.all()
-    return render_template("index.html", questions=questions)
+    tests = question_bank.available_tests()
+    selected_test_id = request.args.get("test_id") if tests else None
+
+    questions: List[Question] = []
+    if tests:
+        if selected_test_id:
+            try:
+                questions = question_bank.questions_for(selected_test_id)
+            except ValueError:
+                selected_test_id = tests[0].identifier
+                questions = question_bank.questions_for(selected_test_id)
+        else:
+            selected_test_id = tests[0].identifier
+            questions = question_bank.questions_for(selected_test_id)
+
+    return render_template(
+        "index.html",
+        tests=tests,
+        selected_test_id=selected_test_id,
+        questions=questions,
+    )
 
 
 @app.post("/results")
 def results():
-    questions = question_bank.all()
+    test_id = request.form.get("test_id", "").strip()
+    if not test_id:
+        abort(400, description="A test must be selected to score responses.")
+
+    try:
+        test = question_bank.get_test(test_id)
+    except ValueError as exc:
+        abort(400, description=str(exc))
+
+    questions = question_bank.questions_for(test_id)
     student_name = request.form.get("student_name", "").strip() or "Student"
 
     answers: Dict[int, str] = {}
@@ -152,6 +210,8 @@ def results():
     return render_template(
         "results.html",
         student_name=student_name,
+        test_id=test.identifier,
+        test_name=test.name,
         report=report,
     )
 

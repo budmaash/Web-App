@@ -3,6 +3,7 @@
 {% block content %}
   <section class="card">
     <h2>Score report for {{ student_name }}</h2>
+    <p class="test-meta"><strong>Test:</strong> {{ test_name }}</p>
     <div class="score-summary">
       <p><strong>Total correct:</strong> {{ report.correct_count }} / {{ report.total_questions }}</p>
       <p><strong>Accuracy:</strong> {{ '%.1f'|format(report.accuracy_pct) }}%</p>
@@ -71,7 +72,7 @@
       </table>
     </div>
     <div class="form-actions">
-      <a href="{{ url_for('index') }}" class="button">Score another student</a>
+      <a href="{{ url_for('index', test_id=test_id) }}" class="button">Score another student</a>
     </div>
   </section>
 {% endblock %}
