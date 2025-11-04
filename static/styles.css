@@ -282,6 +282,13 @@ table thead {
   font-size: 1.1rem;
 }
 
+.score-chart {
+  position: relative;
+  max-width: 420px;
+  margin: 0 auto;
+  height: 320px;
+}
+
 .score-summary p {
   margin: 0;
 }

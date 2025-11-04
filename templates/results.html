@@ -14,6 +14,15 @@
     {% endif %}
   </section>
 
+  {% if report.category_breakdown %}
+    <section class="card">
+      <h3>Category distribution</h3>
+      <div class="score-chart" role="img" aria-label="Pie chart showing the proportion of questions in each category">
+        <canvas id="category-distribution-chart"></canvas>
+      </div>
+    </section>
+  {% endif %}
+
   <section class="card">
     <h3>Category breakdown</h3>
     <div class="table-wrapper">
@@ -78,4 +87,67 @@
       <a href="{{ url_for('index', test_id=test_id) }}" class="button">Score another student</a>
     </div>
   </section>
+
+  {% if report.category_breakdown %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-0mwfV8cxwU1j94V6PaPVwNH1D1ZgEVBK1b81mSqWkMoAyEulGfg0z4Rwa0PG8BXk" crossorigin="anonymous"></script>
+    <script>
+      (function () {
+        const chartElement = document.getElementById('category-distribution-chart');
+        if (!chartElement) {
+          return;
+        }
+
+        const categoryLabels = {{ report.category_breakdown|map(attribute='category')|list|tojson }};
+        const categoryTotals = {{ report.category_breakdown|map(attribute='total')|list|tojson }};
+        const categoryCorrect = {{ report.category_breakdown|map(attribute='correct')|list|tojson }};
+        const totalQuestions = {{ report.total_questions }};
+
+        const missedCounts = categoryTotals.map((total, index) => total - categoryCorrect[index]);
+        const colors = [
+          '#2563eb', '#7c3aed', '#0ea5e9', '#db2777', '#059669', '#f97316', '#6366f1', '#0f766e'
+        ];
+
+        new Chart(chartElement, {
+          type: 'doughnut',
+          data: {
+            labels: categoryLabels,
+            datasets: [
+              {
+                data: categoryTotals,
+                backgroundColor: colors,
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                missedCounts: missedCounts
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  boxWidth: 16,
+                  boxHeight: 16
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    const dataset = context.dataset;
+                    const missed = dataset.missedCounts[context.dataIndex];
+                    const total = dataset.data[context.dataIndex];
+                    const percent = totalQuestions ? ((total / totalQuestions) * 100).toFixed(1) : '0.0';
+                    const baseLabel = `${context.label}: ${percent}% of exam`;
+                    return missed > 0 ? `${baseLabel} (Missed: ${missed})` : `${baseLabel} (Missed: 0)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      })();
+    </script>
+  {% endif %}
 {% endblock %}
