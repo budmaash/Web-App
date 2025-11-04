@@ -4,6 +4,7 @@ import csv
 import math
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -11,6 +12,7 @@ from flask import Flask, abort, redirect, render_template, request, url_for
 
 
 DATA_DIR = Path("data")
+RESULTS_DIR = Path("results")
 
 
 @dataclass
@@ -135,6 +137,7 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
             {
                 "number": question.number,
                 "student_answer": student_answer or "—",
+                "raw_student_answer": student_answer,
                 "correct_answer": question.display_correct_answer,
                 "is_correct": is_correct,
                 "category": question.category,
@@ -229,6 +232,49 @@ def _is_numeric_token(value: str) -> bool:
     return trimmed.isdigit()
 
 
+def _sanitize_filename_segment(value: str) -> str:
+    if not value:
+        return "student"
+
+    allowed = [ch for ch in value if ch.isalnum() or ch in ("-", "_")]
+    sanitized = "".join(allowed).strip("-_")
+    return sanitized or "student"
+
+
+def _save_score_report(report, student_name: str, test: TestDefinition) -> str:
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    safe_student = _sanitize_filename_segment(student_name)
+    filename = f"{test.identifier}_{safe_student}_{timestamp}.csv"
+    destination = RESULTS_DIR / filename
+
+    with destination.open("w", newline="") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["question_number", "student_answer", "category", "status"])
+        for row in report["per_question"]:
+            if row["is_correct"]:
+                status = "Correct"
+            elif not row["raw_student_answer"]:
+                status = "Omitted"
+            else:
+                status = "Incorrect"
+
+            writer.writerow(
+                [
+                    row["number"],
+                    row["raw_student_answer"],
+                    row["category"],
+                    status,
+                ]
+            )
+
+    try:
+        return str(destination.relative_to(Path.cwd()))
+    except ValueError:
+        return str(destination)
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     tests = question_bank.available_tests()
@@ -312,12 +358,15 @@ def results():
 
     report = build_score_report(answers, questions)
 
+    saved_report_path = _save_score_report(report, student_name, test)
+
     return render_template(
         "results.html",
         student_name=student_name,
         test_id=test.identifier,
         test_name=test.name,
         report=report,
+        report_csv_path=saved_report_path,
     )
 
 

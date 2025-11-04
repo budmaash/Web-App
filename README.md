@@ -10,6 +10,7 @@ This project provides a lightweight web application for entering student respons
 - 🗂️ Category breakdown that mirrors the categories defined in your spreadsheet
 - 📝 Choose from any CSV answer keys stored in the `data/` directory
 - 🔁 Quickly rescore another student without reloading the page
+- 📄 Automatically archive each score report as a CSV file for future reference
 
 ## Project structure
 
@@ -18,6 +19,7 @@ This project provides a lightweight web application for entering student respons
 ├── app.py                # Flask application with scoring logic
 ├── data/
 │   └── *.csv             # One or more answer keys with category metadata
+├── results/              # Generated score report CSVs (created on demand)
 ├── static/
 │   └── styles.css        # Styling for the UI
 └── templates/

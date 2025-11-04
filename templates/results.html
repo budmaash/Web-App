@@ -9,6 +9,9 @@
       <p><strong>Accuracy:</strong> {{ '%.1f'|format(report.accuracy_pct) }}%</p>
       <p><strong>Estimated SAT Math score:</strong> {{ report.scaled_score }}</p>
     </div>
+    {% if report_csv_path %}
+      <p class="test-meta"><strong>Saved report:</strong> {{ report_csv_path }}</p>
+    {% endif %}
   </section>
 
   <section class="card">
@@ -60,7 +63,7 @@
               <td>
                 {% if row.is_correct %}
                   ✅ Correct
-                {% elif row.student_answer == '—' %}
+                {% elif not row.raw_student_answer %}
                   ◻️ Omitted
                 {% else %}
                   ❌ Incorrect
