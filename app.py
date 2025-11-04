@@ -12,6 +12,7 @@ from flask import Flask, abort, redirect, render_template, request, url_for
 
 
 DATA_DIR = Path("data")
+CATEGORY_DB_DIR = DATA_DIR / "category_db"
 RESULTS_DIR = Path("results")
 
 
@@ -47,6 +48,7 @@ class QuestionBank:
     def __init__(self, data_dir: Path) -> None:
         self._data_dir = data_dir
         self._questions_cache: Dict[str, List[Question]] = {}
+        self._category_lookup = self._load_category_lookup()
 
     def available_tests(self) -> List[TestDefinition]:
         tests: List[TestDefinition] = []
@@ -100,10 +102,19 @@ class QuestionBank:
                         f"Question {number} is missing a 'correct_answer' entry."
                     )
 
-                category = row.get("category", "").strip()
-                if not category:
+                category_id_raw = row.get("category_type_id", "").strip()
+                if not category_id_raw:
                     raise ValueError(
-                        f"Question {number} is missing a 'category' entry."
+                        f"Question {number} is missing a 'category_type_id' entry."
+                    )
+
+                category_key = _normalize_category_key(category_id_raw)
+                category = self._category_lookup.get(category_key)
+                if category is None:
+                    raise ValueError(
+                        "Question {} references an unknown category_type_id '{}'.".format(
+                            number, category_id_raw
+                        )
                     )
 
                 questions.append(
@@ -117,6 +128,48 @@ class QuestionBank:
 
         questions.sort(key=lambda q: q.number)
         return questions
+
+    def _load_category_lookup(self) -> Dict[str, str]:
+        category_file = CATEGORY_DB_DIR / "SAT_Question_Categories.csv"
+
+        if not category_file.exists():
+            raise FileNotFoundError(
+                "Category database not found. Expected at '{}'".format(category_file)
+            )
+
+        lookup: Dict[str, str] = {}
+        with category_file.open(newline="") as csv_file:
+            reader = csv.reader(csv_file)
+            for row in reader:
+                if not row:
+                    continue
+
+                raw_key = row[0].strip()
+                if not raw_key:
+                    continue
+
+                if raw_key.lower() == "index":
+                    continue
+
+                if len(row) < 2:
+                    raise ValueError(
+                        "Category mapping rows must include at least two columns."
+                    )
+
+                category_name = row[1].strip()
+                if not category_name:
+                    raise ValueError(
+                        "Category '{}' is missing a name in the mapping file.".format(
+                            raw_key
+                        )
+                    )
+
+                lookup[_normalize_category_key(raw_key)] = category_name
+
+        if not lookup:
+            raise ValueError("No categories were loaded from the mapping file.")
+
+        return lookup
 
 
 def build_score_report(student_answers: Dict[int, str], questions: List[Question]):
@@ -178,9 +231,6 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
     }
 
 
-question_bank = QuestionBank(DATA_DIR)
-
-
 def _normalize_answers(raw_answer: str) -> Tuple[List[str], bool]:
     tokens = [token.strip() for token in raw_answer.split(";")]
     tokens = [token for token in tokens if token]
@@ -230,6 +280,20 @@ def _is_numeric_token(value: str) -> bool:
     trimmed = trimmed.replace(".", "")
 
     return trimmed.isdigit()
+
+
+def _normalize_category_key(value: str) -> str:
+    cleaned = value.strip()
+    if not cleaned:
+        return cleaned
+
+    try:
+        return str(int(cleaned))
+    except ValueError:
+        return cleaned
+
+
+question_bank = QuestionBank(DATA_DIR)
 
 
 def _sanitize_filename_segment(value: str) -> str:

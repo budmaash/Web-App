@@ -7,7 +7,7 @@ This project provides a lightweight web application for entering student respons
 - ✅ Start by selecting the test and student, then enter answers using a multiple-choice or numeric-entry web form
 - 🎯 Handle grid-in questions with alternate numeric answers (e.g. `5;5.0`)
 - 📊 Instant score report with estimated scaled SAT Math score
-- 🗂️ Category breakdown that mirrors the categories defined in your spreadsheet
+- 🗂️ Category breakdown that mirrors the categories defined in your spreadsheet-backed category database
 - 📝 Choose from any CSV answer keys stored in the `data/` directory
 - 🔁 Quickly rescore another student without reloading the page
 - 📄 Automatically archive each score report as a CSV file for future reference
@@ -18,6 +18,8 @@ This project provides a lightweight web application for entering student respons
 .
 ├── app.py                # Flask application with scoring logic
 ├── data/
+│   ├── category_db/
+│   │   └── SAT_Question_Categories.csv  # Lookup table that maps category_type_id values to labels
 │   └── *.csv             # One or more answer keys with category metadata
 ├── results/              # Generated score report CSVs (created on demand)
 ├── static/
@@ -55,7 +57,9 @@ Place one or more CSV files inside the `data/` directory—each file represents 
 
 - `question_number` – The numeric identifier of the question (e.g. 1, 2, …)
 - `correct_answer` – The correct answer choice (A–D) or numeric value for grid-in questions. For grid-ins with multiple acceptable values, separate each option with a semicolon (e.g. `12;12.0`).
-- `category` – The category label to use in the score report
+- `category_type_id` – A numeric identifier that maps to the `index` column inside `data/category_db/SAT_Question_Categories.csv`. The score report will display the human-readable category name from that lookup table.
+
+Update `data/category_db/SAT_Question_Categories.csv` whenever you add or modify category labels so that each `category_type_id` continues to resolve to the desired text in the score report.
 
 Additional columns are ignored, so you can keep extra metadata in the spreadsheet without breaking the importer. Add, remove, or rename files at any time; the app will automatically list every CSV present when you reload the page.
 
