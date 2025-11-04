@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from flask import Flask, abort, render_template, request
+from flask import Flask, abort, redirect, render_template, request, url_for
 
 
 DATA_DIR = Path("data")
@@ -229,27 +229,62 @@ def _is_numeric_token(value: str) -> bool:
     return trimmed.isdigit()
 
 
-@app.get("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
     tests = question_bank.available_tests()
-    selected_test_id = request.args.get("test_id") if tests else None
+    selected_test_id = tests[0].identifier if tests else None
 
-    questions: List[Question] = []
-    if tests:
-        if selected_test_id:
-            try:
-                questions = question_bank.questions_for(selected_test_id)
-            except ValueError:
-                selected_test_id = tests[0].identifier
-                questions = question_bank.questions_for(selected_test_id)
-        else:
+    if request.method == "POST":
+        if not tests:
+            abort(400, description="No test files are available to score.")
+
+        test_id = request.form.get("test_id", "").strip() or selected_test_id
+        student_name = request.form.get("student_name", "").strip()
+
+        try:
+            question_bank.get_test(test_id)
+            selected_test_id = test_id
+        except ValueError:
+            # Fall back to the default test if an invalid identifier is submitted.
             selected_test_id = tests[0].identifier
-            questions = question_bank.questions_for(selected_test_id)
+
+        return redirect(
+            url_for("entry", test_id=selected_test_id, student_name=student_name)
+        )
+
+    if request.method == "GET" and tests:
+        requested_test = request.args.get("test_id", "").strip()
+        if requested_test:
+            try:
+                question_bank.get_test(requested_test)
+                selected_test_id = requested_test
+            except ValueError:
+                pass
 
     return render_template(
-        "index.html",
-        tests=tests,
-        selected_test_id=selected_test_id,
+        "index.html", tests=tests, selected_test_id=selected_test_id
+    )
+
+
+@app.get("/entry")
+def entry():
+    test_id = request.args.get("test_id", "").strip()
+    student_name = request.args.get("student_name", "").strip()
+
+    if not test_id:
+        abort(400, description="A test must be selected before entering answers.")
+
+    try:
+        test = question_bank.get_test(test_id)
+    except ValueError as exc:
+        abort(400, description=str(exc))
+
+    questions = question_bank.questions_for(test_id)
+
+    return render_template(
+        "entry.html",
+        test=test,
+        student_name=student_name,
         questions=questions,
     )
 

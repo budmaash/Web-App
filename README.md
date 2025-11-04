@@ -4,7 +4,7 @@ This project provides a lightweight web application for entering student respons
 
 ## Features
 
-- ✅ Enter answers for each question using a simple multiple-choice or numeric-entry web form
+- ✅ Start by selecting the test and student, then enter answers using a multiple-choice or numeric-entry web form
 - 🎯 Handle grid-in questions with alternate numeric answers (e.g. `5;5.0`)
 - 📊 Instant score report with estimated scaled SAT Math score
 - 🗂️ Category breakdown that mirrors the categories defined in your spreadsheet
@@ -22,7 +22,8 @@ This project provides a lightweight web application for entering student respons
 │   └── styles.css        # Styling for the UI
 └── templates/
     ├── base.html         # Shared layout
-    ├── index.html        # Answer entry form
+    ├── index.html        # Test and student selector
+    ├── entry.html        # Answer entry form
     └── results.html      # Score report view
 ```
 

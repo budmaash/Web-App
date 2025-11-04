@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Enter Answers · SAT Math Score Tool{% endblock %}
+{% block content %}
+  <section class="card">
+    <h2>Enter student responses</h2>
+    <p>
+      Scoring {{ student_name or 'Student' }} for {{ test.name }}. Select the answer for each question
+      below. Multiple-choice questions use options A–D, while grid-in questions accept a numeric
+      response. Leave a question unanswered to mark it as omitted.
+    </p>
+    <form method="post" action="{{ url_for('results') }}" class="answer-form">
+      <input type="hidden" name="test_id" value="{{ test.identifier }}" />
+      <input type="hidden" name="student_name" value="{{ student_name }}" />
+      <div class="table-wrapper">
+        <table class="answer-table">
+          <thead>
+            <tr>
+              <th scope="col">Question</th>
+              {% for choice in ['A', 'B', 'C', 'D'] %}
+                <th scope="col" class="choice-heading">{{ choice }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for question in questions %}
+              <tr>
+                <th scope="row">{{ question.number }}</th>
+                {% if question.expects_numeric_response %}
+                  <td class="free-response-cell" colspan="4">
+                    <label class="sr-only" for="q_{{ question.number }}">Numeric response</label>
+                    <input
+                      type="text"
+                      name="q_{{ question.number }}"
+                      id="q_{{ question.number }}"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      class="free-response-input"
+                      placeholder="Enter answer"
+                    />
+                  </td>
+                {% else %}
+                  {% for choice in ['A', 'B', 'C', 'D'] %}
+                    <td class="choice-cell">
+                      <label class="choice-label" for="q_{{ question.number }}_{{ choice }}">
+                        <input
+                          type="radio"
+                          name="q_{{ question.number }}"
+                          id="q_{{ question.number }}_{{ choice }}"
+                          value="{{ choice }}"
+                        />
+                        <span class="sr-only">Choice {{ choice }}</span>
+                      </label>
+                    </td>
+                  {% endfor %}
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="form-actions">
+        <button type="submit">Generate score report</button>
+      </div>
+    </form>
+    <p class="form-footer-note">
+      <a href="{{ url_for('index', test_id=test.identifier) }}">Choose a different test or student</a>
+    </p>
+  </section>
+{% endblock %}
