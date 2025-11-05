@@ -16,20 +16,20 @@
 
   {% if report.category_breakdown %}
     <section class="card">
-      <h3>Category distribution</h3>
-      <div class="score-chart" role="img" aria-label="Pie chart showing the proportion of questions in each category">
+      <h3>Question-Type distribution</h3>
+      <div class="score-chart" role="img" aria-label="Pie chart showing the proportion of questions in each question type">
         <canvas id="category-distribution-chart"></canvas>
       </div>
     </section>
   {% endif %}
 
   <section class="card">
-    <h3>Category breakdown</h3>
+    <h3>Question-Type breakdown</h3>
     <div class="table-wrapper">
       <table>
         <thead>
           <tr>
-            <th>Category</th>
+            <th>Question-Type</th>
             <th>Correct</th>
             <th>Total</th>
             <th>Accuracy</th>
@@ -58,7 +58,7 @@
             <th>#</th>
             <th>Your answer</th>
             <th>Correct answer</th>
-            <th>Category</th>
+            <th>Question-Type</th>
             <th>Status</th>
           </tr>
         </thead>
