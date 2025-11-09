@@ -20,8 +20,12 @@
           </select>
         </div>
         <div class="form-field">
-          <label for="student_name">Student name</label>
-          <input type="text" name="student_name" id="student_name" placeholder="e.g. Jordan" />
+          <label for="first_name">First name</label>
+          <input type="text" name="first_name" id="first_name" placeholder="e.g. Jordan" value="{{ first_name }}" required />
+        </div>
+        <div class="form-field">
+          <label for="last_name">Last name</label>
+          <input type="text" name="last_name" id="last_name" placeholder="e.g. Lee" value="{{ last_name }}" required />
         </div>
         <div class="form-actions">
           <button type="submit">Start entering answers</button>

@@ -4,7 +4,7 @@ This project provides a lightweight web application for entering student respons
 
 ## Features
 
-- ✅ Start by selecting the test and student, then enter answers using a multiple-choice or numeric-entry web form
+- ✅ Start by selecting the test and entering the student's first and last name, then record answers using a multiple-choice or numeric-entry web form
 - 🎯 Handle grid-in questions with alternate numeric answers (e.g. `5;5.0`)
 - 📊 Instant score report with estimated scaled SAT Math score
 - 🗂️ Category breakdown that mirrors the categories defined in your spreadsheet-backed category database
@@ -63,7 +63,9 @@ When a local PostgreSQL instance is running, the app now does two things:
    reflected immediately in the UI alongside the CSV-based tests that live in
    `data/`.
 2. **Archives submissions.** Every score report is stored in a `submissions`
-   table for external analytics.
+   table for external analytics, along with a `students` roster (deduped by
+   first/last name) plus one row per question in the `responses` table tying the
+   student's answer to the appropriate test/section/module metadata.
 
 The default connection details are:
 

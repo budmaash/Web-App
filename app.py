@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import psycopg2
-from flask import Flask, abort, redirect, render_template, request, url_for
+from psycopg2 import sql
+from flask import Flask, abort, flash, redirect, render_template, request, url_for
 
 
 DATA_DIR = Path("data")
@@ -33,6 +34,7 @@ class Question:
     correct_answers: List[str]
     category: str
     expects_numeric_response: bool
+    db_question_id: Optional[int] = None
 
     @property
     def display_correct_answer(self) -> str:
@@ -225,7 +227,8 @@ class QuestionBank:
             SELECT
                 q.test_question_number,
                 q.correct_answer,
-                qt.name AS category_name
+                qt.name AS category_name,
+                q.id AS question_id
             FROM questions q
             JOIN question_types qt ON q.question_type_id = qt.id
             WHERE q.test_id = %s AND q.section_id = %s AND q.module_id = %s
@@ -251,7 +254,7 @@ class QuestionBank:
         if not rows:
             raise ValueError("No questions were found for the selected database test.")
 
-        for test_question_number, correct_answer, category_name in rows:
+        for test_question_number, correct_answer, category_name, question_id in rows:
             if test_question_number is None:
                 raise ValueError("Each database question must include a test_question_number.")
 
@@ -272,6 +275,7 @@ class QuestionBank:
                     correct_answers=answers,
                     category=category_name,
                     expects_numeric_response=expects_numeric_response,
+                    db_question_id=question_id,
                 )
             )
 
@@ -488,6 +492,14 @@ def _save_score_report(report, student_name: str, test: TestDefinition) -> str:
         return str(destination)
 
 
+def _compose_student_name(first_name: str, last_name: str) -> str:
+    first = (first_name or "").strip()
+    last = (last_name or "").strip()
+    if first and last:
+        return f"{first} {last}"
+    return first or last or "Student"
+
+
 def _persist_submission(
     *,
     test: TestDefinition,
@@ -536,17 +548,123 @@ def _persist_submission(
         app.logger.warning("Failed to persist submission to Postgres: %s", exc)
 
 
+def _next_table_id(cursor, table_name: str) -> int:
+    query = sql.SQL("SELECT COALESCE(MAX(id), 0) + 1 FROM {}").format(sql.Identifier(table_name))
+    cursor.execute(query)
+    row = cursor.fetchone()
+    if not row:
+        raise RuntimeError(f"Unable to compute next id for table '{table_name}'.")
+    return int(row[0])
+
+
+def _get_or_create_student_id(cursor, first_name: str, last_name: str) -> int:
+    cursor.execute(
+        """
+        SELECT id
+        FROM students
+        WHERE LOWER(first_name) = LOWER(%s) AND LOWER(last_name) = LOWER(%s)
+        """,
+        (first_name, last_name),
+    )
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+
+    new_id = _next_table_id(cursor, "students")
+    cursor.execute(
+        """
+        INSERT INTO students (id, first_name, last_name)
+        VALUES (%s, %s, %s)
+        RETURNING id
+        """,
+        (new_id, first_name, last_name),
+    )
+    row = cursor.fetchone()
+    if not row:
+        raise RuntimeError("Failed to insert student record.")
+    return row[0]
+
+
+def _persist_student_and_responses(
+    *,
+    first_name: str,
+    last_name: str,
+    test: TestDefinition,
+    questions: List[Question],
+    answers: Dict[int, str],
+) -> None:
+    if not DB_ENABLED:
+        return
+
+    first = (first_name or "").strip()
+    last = (last_name or "").strip()
+    if not first or not last:
+        return
+
+    try:
+        with psycopg2.connect(**DB_CONFIG) as conn:
+            with conn.cursor() as cursor:
+                student_id = _get_or_create_student_id(cursor, first, last)
+
+                metadata = test.db_metadata
+                if metadata:
+                    next_response_id = _next_table_id(cursor, "responses")
+                    for question in questions:
+                        if question.db_question_id is None:
+                            continue
+                        cursor.execute(
+                            """
+                            INSERT INTO responses (
+                                id,
+                                student_id,
+                                test_id,
+                                section_id,
+                                module_id,
+                                test_question_number_id,
+                                responses
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """,
+                            (
+                                next_response_id,
+                                student_id,
+                                metadata.test_id,
+                                metadata.section_id,
+                                metadata.module_id,
+                                question.db_question_id,
+                                answers.get(question.number, ""),
+                            ),
+                        )
+                        next_response_id += 1
+
+            conn.commit()
+    except psycopg2.Error as exc:
+        app.logger.warning("Failed to persist student/responses: %s", exc)
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     tests = question_bank.available_tests()
     selected_test_id = tests[0].identifier if tests else None
+    first_name = ""
+    last_name = ""
 
     if request.method == "POST":
         if not tests:
             abort(400, description="No test files are available to score.")
 
         test_id = request.form.get("test_id", "").strip() or selected_test_id
-        student_name = request.form.get("student_name", "").strip()
+        first_name = request.form.get("first_name", "").strip()
+        last_name = request.form.get("last_name", "").strip()
+
+        if not first_name or not last_name:
+            flash("First and last name are required.")
+            return render_template(
+                "index.html",
+                tests=tests,
+                selected_test_id=selected_test_id,
+                first_name=first_name,
+                last_name=last_name,
+            )
 
         try:
             question_bank.get_test(test_id)
@@ -556,11 +674,18 @@ def index():
             selected_test_id = tests[0].identifier
 
         return redirect(
-            url_for("entry", test_id=selected_test_id, student_name=student_name)
+            url_for(
+                "entry",
+                test_id=selected_test_id,
+                first_name=first_name,
+                last_name=last_name,
+            )
         )
 
     if request.method == "GET" and tests:
         requested_test = request.args.get("test_id", "").strip()
+        first_name = request.args.get("first_name", "").strip()
+        last_name = request.args.get("last_name", "").strip()
         if requested_test:
             try:
                 question_bank.get_test(requested_test)
@@ -569,17 +694,25 @@ def index():
                 pass
 
     return render_template(
-        "index.html", tests=tests, selected_test_id=selected_test_id
+        "index.html",
+        tests=tests,
+        selected_test_id=selected_test_id,
+        first_name=first_name,
+        last_name=last_name,
     )
 
 
 @app.get("/entry")
 def entry():
     test_id = request.args.get("test_id", "").strip()
-    student_name = request.args.get("student_name", "").strip()
+    first_name = request.args.get("first_name", "").strip()
+    last_name = request.args.get("last_name", "").strip()
+    student_name = _compose_student_name(first_name, last_name)
 
     if not test_id:
         abort(400, description="A test must be selected before entering answers.")
+    if not first_name or not last_name:
+        abort(400, description="First and last name are required to score a student.")
 
     try:
         test = question_bank.get_test(test_id)
@@ -592,6 +725,8 @@ def entry():
         "entry.html",
         test=test,
         student_name=student_name,
+        first_name=first_name,
+        last_name=last_name,
         questions=questions,
     )
 
@@ -608,7 +743,11 @@ def results():
         abort(400, description=str(exc))
 
     questions = question_bank.questions_for(test_id)
-    student_name = request.form.get("student_name", "").strip() or "Student"
+    first_name = request.form.get("first_name", "").strip()
+    last_name = request.form.get("last_name", "").strip()
+    if not first_name or not last_name:
+        abort(400, description="First and last name are required to score a student.")
+    student_name = _compose_student_name(first_name, last_name)
 
     answers: Dict[int, str] = {}
     for question in questions:
@@ -618,6 +757,14 @@ def results():
         answers[question.number] = answer
 
     report = build_score_report(answers, questions)
+
+    _persist_student_and_responses(
+        first_name=first_name,
+        last_name=last_name,
+        test=test,
+        questions=questions,
+        answers=answers,
+    )
 
     saved_report_path = _save_score_report(report, student_name, test)
     _persist_submission(test=test, student_name=student_name, answers=answers, report=report)
@@ -629,6 +776,8 @@ def results():
         test_name=test.name,
         report=report,
         report_csv_path=saved_report_path,
+        first_name=first_name,
+        last_name=last_name,
     )
 
 
