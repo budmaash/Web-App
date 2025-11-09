@@ -49,7 +49,54 @@ This project provides a lightweight web application for entering student respons
 
 3. **Open the app**
 
-   Visit <http://127.0.0.1:5000> in your browser.
+Visit <http://127.0.0.1:5000> in your browser.
+
+## Database logging & dynamic tests (optional)
+
+When a local PostgreSQL instance is running, the app now does two things:
+
+1. **Exposes database-backed tests.** Each combination of entries from the
+   `tests`, `sections`, and `modules` tables produces a selectable exam—for
+   example, `Digital Paper Test 1 Math Module 1` and `Digital Paper Test 1 Math
+   Module 2`. Questions are pulled from the `questions` table and categories are
+   resolved via `question_types`, so any updates you make in the database are
+   reflected immediately in the UI alongside the CSV-based tests that live in
+   `data/`.
+2. **Archives submissions.** Every score report is stored in a `submissions`
+   table for external analytics.
+
+The default connection details are:
+
+```
+host=localhost
+port=5432
+dbname=SAT_Database
+user=postgres
+password=3rdtrail
+```
+
+Override any value by exporting `SAT_DB_HOST`, `SAT_DB_PORT`, `SAT_DB_NAME`,
+`SAT_DB_USER`, `SAT_DB_PASSWORD`, or disable all database features with
+`SAT_DB_ENABLED=0`.
+
+Create the destination table before running the app:
+
+```sql
+CREATE TABLE IF NOT EXISTS submissions (
+  id SERIAL PRIMARY KEY,
+  test_code TEXT NOT NULL,
+  student_name TEXT NOT NULL,
+  answers_json JSONB NOT NULL,
+  results_json JSONB NOT NULL,
+  category_json JSONB NOT NULL,
+  raw_correct INTEGER NOT NULL,
+  raw_total INTEGER NOT NULL,
+  scaled_score INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS ix_submissions_test_code ON submissions (test_code);
+```
 
 ## Customising the answer keys
 

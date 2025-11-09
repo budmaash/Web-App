@@ -1,19 +1,30 @@
 from __future__ import annotations
 
 import csv
+import json
 import math
+import os
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
+import psycopg2
 from flask import Flask, abort, redirect, render_template, request, url_for
 
 
 DATA_DIR = Path("data")
 CATEGORY_DB_DIR = DATA_DIR / "category_db"
 RESULTS_DIR = Path("results")
+DB_CONFIG = {
+    "host": os.environ.get("SAT_DB_HOST", "localhost"),
+    "port": int(os.environ.get("SAT_DB_PORT", "5432")),
+    "user": os.environ.get("SAT_DB_USER", "postgres"),
+    "password": os.environ.get("SAT_DB_PASSWORD", "3rdtrail"),
+    "dbname": os.environ.get("SAT_DB_NAME", "SAT_Database"),
+}
+DB_ENABLED = os.environ.get("SAT_DB_ENABLED", "1") not in {"0", "false", "False"}
 
 
 @dataclass
@@ -36,10 +47,19 @@ app = Flask(__name__)
 
 
 @dataclass(frozen=True)
+class DatabaseTestMetadata:
+    test_id: int
+    section_id: int
+    module_id: int
+
+
+@dataclass(frozen=True)
 class TestDefinition:
     identifier: str
     name: str
-    path: Path
+    source: str
+    path: Optional[Path] = None
+    db_metadata: Optional[DatabaseTestMetadata] = None
 
 
 class QuestionBank:
@@ -52,6 +72,12 @@ class QuestionBank:
 
     def available_tests(self) -> List[TestDefinition]:
         tests: List[TestDefinition] = []
+        tests.extend(self._available_csv_tests())
+        tests.extend(self._available_database_tests())
+        return tests
+
+    def _available_csv_tests(self) -> List[TestDefinition]:
+        tests: List[TestDefinition] = []
 
         if not self._data_dir.exists():
             return tests
@@ -59,7 +85,60 @@ class QuestionBank:
         for csv_path in sorted(self._data_dir.glob("*.csv")):
             identifier = csv_path.stem
             name = csv_path.stem.replace("_", " ").title()
-            tests.append(TestDefinition(identifier=identifier, name=name, path=csv_path))
+            tests.append(
+                TestDefinition(
+                    identifier=identifier,
+                    name=name,
+                    source="csv",
+                    path=csv_path,
+                )
+            )
+
+        return tests
+
+    def _available_database_tests(self) -> List[TestDefinition]:
+        tests: List[TestDefinition] = []
+
+        if not DB_ENABLED:
+            return tests
+
+        try:
+            with psycopg2.connect(**DB_CONFIG) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT DISTINCT
+                            q.test_id,
+                            t.name,
+                            q.section_id,
+                            s.name,
+                            q.module_id,
+                            m.name
+                        FROM questions q
+                        JOIN tests t ON q.test_id = t.id
+                        JOIN sections s ON q.section_id = s.id
+                        JOIN modules m ON q.module_id = m.id
+                        ORDER BY t.name, s.name, m.name, q.test_id, q.section_id, q.module_id
+                        """
+                    )
+                    for row in cursor.fetchall():
+                        test_id, test_name, section_id, section_name, module_id, module_name = row
+                        identifier = f"db_{test_id}_{section_id}_{module_id}"
+                        display_name = f"{test_name} {section_name} {module_name}"
+                        tests.append(
+                            TestDefinition(
+                                identifier=identifier,
+                                name=display_name,
+                                source="database",
+                                db_metadata=DatabaseTestMetadata(
+                                    test_id=test_id,
+                                    section_id=section_id,
+                                    module_id=module_id,
+                                ),
+                            )
+                        )
+        except psycopg2.Error as exc:
+            app.logger.warning("Failed to load database tests: %s", exc)
 
         return tests
 
@@ -74,11 +153,20 @@ class QuestionBank:
             return self._questions_cache[test_id]
 
         test = self.get_test(test_id)
-        questions = self._load(test.path)
+        if test.source == "csv":
+            if not test.path:
+                raise ValueError(f"Test '{test.identifier}' is missing its CSV path.")
+            questions = self._load_csv(test.path)
+        elif test.source == "database":
+            if not test.db_metadata:
+                raise ValueError(f"Test '{test.identifier}' is missing database metadata.")
+            questions = self._load_database_questions(test.db_metadata)
+        else:
+            raise ValueError(f"Unknown test source '{test.source}'.")
         self._questions_cache[test_id] = questions
         return questions
 
-    def _load(self, csv_path: Path) -> List[Question]:
+    def _load_csv(self, csv_path: Path) -> List[Question]:
         if not csv_path.exists():
             raise FileNotFoundError(
                 "Question data file not found. Expected at '{}'".format(csv_path)
@@ -125,6 +213,67 @@ class QuestionBank:
                         expects_numeric_response=expects_numeric_response,
                     )
                 )
+
+        questions.sort(key=lambda q: q.number)
+        return questions
+
+    def _load_database_questions(self, metadata: DatabaseTestMetadata) -> List[Question]:
+        if not DB_ENABLED:
+            raise RuntimeError("Database-backed tests are disabled via configuration.")
+
+        query = """
+            SELECT
+                q.test_question_number,
+                q.correct_answer,
+                qt.name AS category_name
+            FROM questions q
+            JOIN question_types qt ON q.question_type_id = qt.id
+            WHERE q.test_id = %s AND q.section_id = %s AND q.module_id = %s
+            ORDER BY q.test_question_number
+        """
+
+        questions: List[Question] = []
+        try:
+            with psycopg2.connect(**DB_CONFIG) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        query,
+                        (
+                            metadata.test_id,
+                            metadata.section_id,
+                            metadata.module_id,
+                        ),
+                    )
+                    rows = cursor.fetchall()
+        except psycopg2.Error as exc:
+            raise RuntimeError(f"Failed to load questions from database: {exc}") from exc
+
+        if not rows:
+            raise ValueError("No questions were found for the selected database test.")
+
+        for test_question_number, correct_answer, category_name in rows:
+            if test_question_number is None:
+                raise ValueError("Each database question must include a test_question_number.")
+
+            answers, expects_numeric_response = _normalize_answers((correct_answer or "").strip())
+            if not answers:
+                raise ValueError(
+                    f"Question {test_question_number} is missing a 'correct_answer' entry."
+                )
+
+            if not category_name:
+                raise ValueError(
+                    f"Question {test_question_number} is missing a linked question type."
+                )
+
+            questions.append(
+                Question(
+                    number=int(test_question_number),
+                    correct_answers=answers,
+                    category=category_name,
+                    expects_numeric_response=expects_numeric_response,
+                )
+            )
 
         questions.sort(key=lambda q: q.number)
         return questions
@@ -339,6 +488,54 @@ def _save_score_report(report, student_name: str, test: TestDefinition) -> str:
         return str(destination)
 
 
+def _persist_submission(
+    *,
+    test: TestDefinition,
+    student_name: str,
+    answers: Dict[int, str],
+    report,
+) -> None:
+    if not DB_ENABLED:
+        return
+
+    payload_answers = json.dumps(answers)
+    payload_report = json.dumps(report)
+    payload_categories = json.dumps(report.get("category_breakdown", []))
+    created_at = datetime.utcnow()
+
+    try:
+        with psycopg2.connect(**DB_CONFIG) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO submissions (
+                        test_code,
+                        student_name,
+                        answers_json,
+                        results_json,
+                        category_json,
+                        raw_correct,
+                        raw_total,
+                        scaled_score,
+                        created_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        test.identifier,
+                        student_name or "Student",
+                        payload_answers,
+                        payload_report,
+                        payload_categories,
+                        report.get("correct_count", 0),
+                        report.get("total_questions", 0),
+                        report.get("scaled_score", 200),
+                        created_at,
+                    ),
+                )
+    except psycopg2.Error as exc:
+        app.logger.warning("Failed to persist submission to Postgres: %s", exc)
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     tests = question_bank.available_tests()
@@ -423,6 +620,7 @@ def results():
     report = build_score_report(answers, questions)
 
     saved_report_path = _save_score_report(report, student_name, test)
+    _persist_submission(test=test, student_name=student_name, answers=answers, report=report)
 
     return render_template(
         "results.html",
