@@ -5,12 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}SAT Math Score Tool{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='new_styling.css') }}" />
   </head>
   <body>
-    <header class="page-header">
-      <div class="container">
-        <h1><a href="{{ url_for('index') }}">SAT Math Score Tool</a></h1>
-        <p class="tagline">Enter answers, review mistakes, and view category performance instantly.</p>
+    <header class="header theme-col--primary" data-test="header">
+      <a href="#page" class="header-skip-link">Skip to Content</a>
+      <div class="header-inner container--fluid header-mobile-layout-logo-left-nav-right header-layout-nav-right">
+        <div class="header-background theme-bg--primary"></div>
+        <div class="header-display-desktop" data-content-field="site-title">
+          <div class="header-title-nav-wrapper">
+            <div class="header-title">
+              <div class="header-title-logo">
+                <a href="https://www.hasantutoring.com" target="_blank" rel="noopener noreferrer">
+                  <img src="https://images.squarespace-cdn.com/content/v1/6719d488c1d7644f3ed87605/1729746067825-0Z2TFR56T4IF6YCHLN4E/HASAN+TUTORING-logo.png?format=500w" alt="Expert Tutoring for the ACT and SAT" />
+                </a>
+              </div>
+            </div>
+            <div class="header-nav">
+              <div class="header-nav-wrapper">
+                <nav class="header-nav-list">
+                  <div class="header-nav-item header-nav-item--collection header-nav-item--homepage">
+                    <a href="https://www.hasantutoring.com/">Start Here</a>
+                  </div>
+                  <div class="header-nav-item header-nav-item--collection">
+                    <a href="https://www.hasantutoring.com/tests-1">Test Info</a>
+                  </div>
+                  <div class="header-nav-item header-nav-item--collection">
+                    <a href="https://www.hasantutoring.com/act-vs-sat">ACT vs. SAT</a>
+                  </div>
+                  <div class="header-nav-item header-nav-item--collection">
+                    <a href="https://www.hasantutoring.com/test-prep-options">Why Tutoring?</a>
+                  </div>
+                  <div class="header-nav-item header-nav-item--collection">
+                    <a href="https://www.hasantutoring.com/about-me">About Me</a>
+                  </div>
+                  <div class="header-nav-item header-nav-item--collection">
+                    <a href="https://www.hasantutoring.com/faqs">FAQs</a>
+                  </div>
+                  <div class="header-nav-item header-nav-item--collection">
+                    <a href="https://www.hasantutoring.com/blog">Blog</a>
+                  </div>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="header-display-mobile" data-content-field="site-title">
+          <div class="header-title-nav-wrapper">
+            <div class="header-title">
+              <div class="header-title-logo">
+                <a href="https://www.hasantutoring.com" target="_blank" rel="noopener noreferrer">
+                  <img src="https://images.squarespace-cdn.com/content/v1/6719d488c1d7644f3ed87605/1729746067825-0Z2TFR56T4IF6YCHLN4E/HASAN+TUTORING-logo.png?format=500w" alt="Expert Tutoring for the ACT and SAT" />
+                </a>
+              </div>
+            </div>
+            <button class="header-burger" type="button" aria-label="Toggle navigation">
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+          <div class="header-nav header-nav--mobile">
+            <div class="header-nav-wrapper">
+              <nav class="header-nav-list">
+                <div class="header-nav-item header-nav-item--collection header-nav-item--homepage">
+                  <a href="https://www.hasantutoring.com/">Start Here</a>
+                </div>
+                <div class="header-nav-item header-nav-item--collection">
+                  <a href="https://www.hasantutoring.com/tests-1">Test Info</a>
+                </div>
+                <div class="header-nav-item header-nav-item--collection">
+                  <a href="https://www.hasantutoring.com/act-vs-sat">ACT vs. SAT</a>
+                </div>
+                <div class="header-nav-item header-nav-item--collection">
+                  <a href="https://www.hasantutoring.com/test-prep-options">Why Tutoring?</a>
+                </div>
+                <div class="header-nav-item header-nav-item--collection">
+                  <a href="https://www.hasantutoring.com/about-me">About Me</a>
+                </div>
+                <div class="header-nav-item header-nav-item--collection">
+                  <a href="https://www.hasantutoring.com/faqs">FAQs</a>
+                </div>
+                <div class="header-nav-item header-nav-item--collection">
+                  <a href="https://www.hasantutoring.com/blog">Blog</a>
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
     <main class="container">
@@ -25,10 +106,39 @@
       {% endwith %}
       {% block content %}{% endblock %}
     </main>
-    <footer class="page-footer">
-      <div class="container">
-        <p>To use a different answer key, replace the <code>data/questions.csv</code> file with your own spreadsheet exported as CSV.</p>
+    <footer class="global-footer">
+      <div class="footer-columns">
+        <div>
+          <h3>Helpful Links</h3>
+          <ul>
+            <li><a href="http://www.actstudent.org/regist/dates.html" target="_blank" rel="noopener noreferrer">ACT Testing Dates</a></li>
+            <li><a href="https://services.actstudent.org/OA_HTML/actibeCAcdLogin.jsp" target="_blank" rel="noopener noreferrer">Sign Up for the ACT</a></li>
+            <li><a href="http://sat.collegeboard.org/register/sat-us-dates" target="_blank" rel="noopener noreferrer">SAT Testing Dates</a></li>
+            <li><a href="http://sat.collegeboard.org/login?applicationId=115&destinationpage=https://nsat.collegeboard.org/satweb/login.jsp&view=NSAT" target="_blank" rel="noopener noreferrer">Sign Up for the SAT</a></li>
+            <li><a href="https://majid-hasan.squarespace.com/test-prep-options#Pricing" target="_blank" rel="noopener noreferrer">How Much for Tutoring?</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Contact Me</h3>
+          <p><a href="mailto:majid@hasantutoring.com">Majid@HasanTutoring.com</a><br />913.210.0611<br /><a href="https://www.hasantutoring.com/contact-pages" target="_blank" rel="noopener noreferrer">Or Send Me a Message</a></p>
+        </div>
+        <div>
+          <h3>My Philosophy</h3>
+          <p><strong>Recognize these exams are extremely repetitive and therefore LEARNABLE.</strong> There are only so many different types of questions, and I teach students to learn to recognize them and the simple steps to answer each one. I meet one-on-one with each student, track their progress, and focus on their needs at their pace.</p>
+        </div>
+      </div>
+      <div class="footer-meta">
+        <p>&copy; {{ current_year }} Hasan Tutoring. All rights reserved.</p>
       </div>
     </footer>
+    <script>
+      const burger = document.querySelector('.header-burger');
+      const mobileNav = document.querySelector('.header-nav--mobile');
+      if (burger && mobileNav) {
+        burger.addEventListener('click', () => {
+          mobileNav.classList.toggle('is-open');
+        });
+      }
+    </script>
   </body>
 </html>

@@ -783,3 +783,6 @@ def results():
 
 if __name__ == "__main__":
     app.run(debug=True)
+@app.context_processor
+def inject_globals():
+    return {"current_year": datetime.utcnow().year}

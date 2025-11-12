@@ -28,7 +28,15 @@
           <input type="text" name="last_name" id="last_name" placeholder="e.g. Lee" value="{{ last_name }}" required />
         </div>
         <div class="form-actions">
-          <button type="submit">Start entering answers</button>
+          <div class="sqs-block" data-definition-name="website.components.button">
+            <div class="sqs-block-content">
+              <div class="sqs-block-button-container sqs-block-button-container--left">
+                <div class="sqs-stretched">
+                  <button type="submit" class="sqs-block-button-element">Start entering answers</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </form>
     {% else %}

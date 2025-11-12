@@ -84,7 +84,15 @@
       </table>
     </div>
     <div class="form-actions">
-      <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name) }}" class="button">Score another student</a>
+      <div class="sqs-block" data-definition-name="website.components.button">
+        <div class="sqs-block-content">
+          <div class="sqs-block-button-container sqs-block-button-container--center">
+            <div class="sqs-stretched">
+              <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name) }}" class="button sqs-block-button-element">Score another student</a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
