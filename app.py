@@ -23,7 +23,7 @@ DB_CONFIG = {
     "port": int(os.environ.get("SAT_DB_PORT", "5432")),
     "user": os.environ.get("SAT_DB_USER", "postgres"),
     "password": os.environ.get("SAT_DB_PASSWORD", "3rdtrail"),
-    "dbname": os.environ.get("SAT_DB_NAME", "sat_database"),
+    "dbname": os.environ.get("SAT_DB_NAME", "SAT_Database"),
 }
 DB_ENABLED = os.environ.get("SAT_DB_ENABLED", "1") not in {"0", "false", "False"}
 

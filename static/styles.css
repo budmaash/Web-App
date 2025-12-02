@@ -286,6 +286,14 @@ button:active,
   background: #fffefa;
 }
 
+@media (min-width: 1100px) {
+  .answer-form {
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 .table-wrapper {
   overflow-x: auto;
 }
@@ -293,7 +301,7 @@ button:active,
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 620px;
+  min-width: 480px;
   background: #fff;
   border-radius: 0.85rem;
   overflow: hidden;
@@ -311,6 +319,11 @@ table td {
   text-align: left;
 }
 
+.answer-table th,
+.answer-table td {
+  padding: 0.65rem 0.6rem;
+}
+
 .answer-table th:first-child {
   width: 1%;
   white-space: nowrap;
@@ -319,6 +332,12 @@ table td {
 .answer-table .choice-heading,
 .answer-table .choice-cell {
   text-align: center;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+
+.answer-table .free-response-cell {
+  padding: 0.75rem 1rem;
 }
 
 .free-response-input {
