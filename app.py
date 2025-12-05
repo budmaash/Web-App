@@ -7,6 +7,7 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -413,26 +414,61 @@ def _normalize_numeric_token(value: str) -> str:
 
 
 def _is_numeric_token(value: str) -> bool:
-    if not value:
+    if value is None:
         return False
 
-    trimmed = value.strip()
+    trimmed = str(value).strip()
     if not trimmed:
         return False
 
-    # Allow negative values and decimal points when determining if the answer
-    # represents a numeric response. Digits remain untouched later, so we don't
-    # coerce the value into a number here.
-    if trimmed.count("-") > 1:
+    signless = trimmed.lstrip("+-").strip()
+    if not signless:
         return False
-    if trimmed.startswith("-"):
-        trimmed = trimmed[1:]
 
-    if trimmed.count(".") > 1:
+    if " " in signless:
+        parts = [part for part in signless.split() if part]
+        if len(parts) == 2 and _is_decimal_string(parts[0]) and _is_fraction_string(parts[1]):
+            return True
         return False
-    trimmed = trimmed.replace(".", "")
 
-    return trimmed.isdigit()
+    if "/" in signless:
+        return _is_fraction_string(signless)
+
+    return _is_decimal_string(signless)
+
+
+def _is_decimal_string(value: str) -> bool:
+    candidate = value.strip()
+    if not candidate:
+        return False
+
+    try:
+        Decimal(candidate)
+    except (InvalidOperation, ValueError):
+        return False
+
+    return True
+
+
+def _is_fraction_string(value: str) -> bool:
+    parts = value.split("/")
+    if len(parts) != 2:
+        return False
+
+    numerator, denominator = (part.strip() for part in parts)
+    if not numerator or not denominator:
+        return False
+
+    if not _is_decimal_string(numerator):
+        return False
+
+    if not _is_decimal_string(denominator):
+        return False
+
+    try:
+        return Decimal(denominator) != 0
+    except (InvalidOperation, ValueError):
+        return False
 
 
 def _normalize_category_key(value: str) -> str:
