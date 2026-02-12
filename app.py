@@ -27,6 +27,7 @@ DB_CONFIG = {
     "dbname": os.environ.get("SAT_DB_NAME", "SAT_Database"),
 }
 DB_ENABLED = os.environ.get("SAT_DB_ENABLED", "1") not in {"0", "false", "False"}
+MULTIPLE_CHOICE_CHOICES = ("A", "B", "C", "D")
 
 
 @dataclass
@@ -764,6 +765,7 @@ def entry():
         first_name=first_name,
         last_name=last_name,
         questions=questions,
+        multiple_choice_choices=MULTIPLE_CHOICE_CHOICES,
     )
 
 

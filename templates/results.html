@@ -7,45 +7,17 @@
     <div class="score-summary">
       <p><strong>Total correct:</strong> {{ report.correct_count }} / {{ report.total_questions }}</p>
       <p><strong>Accuracy:</strong> {{ '%.1f'|format(report.accuracy_pct) }}%</p>
-      <p><strong>Estimated SAT Math score:</strong> {{ report.scaled_score }}</p>
     </div>
-    {% if report_csv_path %}
-      <p class="test-meta"><strong>Saved report:</strong> {{ report_csv_path }}</p>
-    {% endif %}
-  </section>
-
-  {% if report.category_breakdown %}
-    <section class="card">
-      <h3>Question-Type distribution</h3>
-      <div class="score-chart" role="img" aria-label="Pie chart showing the proportion of questions in each question type">
-        <canvas id="category-distribution-chart"></canvas>
+    <div class="form-actions form-actions--right">
+      <div class="sqs-block" data-definition-name="website.components.button">
+        <div class="sqs-block-content">
+          <div class="sqs-block-button-container sqs-block-button-container--center">
+            <div class="sqs-stretched">
+              <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name) }}" class="button sqs-block-button-element">Score Another Test</a>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
-  {% endif %}
-
-  <section class="card">
-    <h3>Question-Type breakdown</h3>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Question-Type</th>
-            <th>Correct</th>
-            <th>Total</th>
-            <th>Accuracy</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for category in report.category_breakdown %}
-            <tr>
-              <td>{{ category.category }}</td>
-              <td>{{ category.correct }}</td>
-              <td>{{ category.total }}</td>
-              <td>{{ '%.1f'|format(category.accuracy_pct) }}%</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
     </div>
   </section>
 
@@ -83,79 +55,32 @@
         </tbody>
       </table>
     </div>
-    <div class="form-actions">
-      <div class="sqs-block" data-definition-name="website.components.button">
-        <div class="sqs-block-content">
-          <div class="sqs-block-button-container sqs-block-button-container--center">
-            <div class="sqs-stretched">
-              <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name) }}" class="button sqs-block-button-element">Score another student</a>
-            </div>
-          </div>
-        </div>
-      </div>
+  </section>
+
+  <section class="card">
+    <h3>Question-Type breakdown</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Question-Type</th>
+            <th>Correct</th>
+            <th>Total</th>
+            <th>Accuracy</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in report.category_breakdown %}
+            <tr>
+              <td>{{ category.category }}</td>
+              <td>{{ category.correct }}</td>
+              <td>{{ category.total }}</td>
+              <td>{{ '%.1f'|format(category.accuracy_pct) }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
 
-  {% if report.category_breakdown %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-0mwfV8cxwU1j94V6PaPVwNH1D1ZgEVBK1b81mSqWkMoAyEulGfg0z4Rwa0PG8BXk" crossorigin="anonymous"></script>
-    <script>
-      (function () {
-        const chartElement = document.getElementById('category-distribution-chart');
-        if (!chartElement) {
-          return;
-        }
-
-        const categoryLabels = {{ report.category_breakdown|map(attribute='category')|list|tojson }};
-        const categoryTotals = {{ report.category_breakdown|map(attribute='total')|list|tojson }};
-        const categoryCorrect = {{ report.category_breakdown|map(attribute='correct')|list|tojson }};
-        const totalQuestions = {{ report.total_questions }};
-
-        const missedCounts = categoryTotals.map((total, index) => total - categoryCorrect[index]);
-        const colors = [
-          '#2563eb', '#7c3aed', '#0ea5e9', '#db2777', '#059669', '#f97316', '#6366f1', '#0f766e'
-        ];
-
-        new Chart(chartElement, {
-          type: 'doughnut',
-          data: {
-            labels: categoryLabels,
-            datasets: [
-              {
-                data: categoryTotals,
-                backgroundColor: colors,
-                borderColor: '#ffffff',
-                borderWidth: 2,
-                missedCounts: missedCounts
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: {
-                  boxWidth: 16,
-                  boxHeight: 16
-                }
-              },
-              tooltip: {
-                callbacks: {
-                  label: function (context) {
-                    const dataset = context.dataset;
-                    const missed = dataset.missedCounts[context.dataIndex];
-                    const total = dataset.data[context.dataIndex];
-                    const percent = totalQuestions ? ((total / totalQuestions) * 100).toFixed(1) : '0.0';
-                    const baseLabel = `${context.label}: ${percent}% of exam`;
-                    return missed > 0 ? `${baseLabel} (Missed: ${missed})` : `${baseLabel} (Missed: 0)`;
-                  }
-                }
-              }
-            }
-          }
-        });
-      })();
-    </script>
-  {% endif %}
 {% endblock %}

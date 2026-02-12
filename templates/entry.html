@@ -17,7 +17,7 @@
           <thead>
             <tr>
               <th scope="col">Question</th>
-              {% for choice in ['A', 'B', 'C', 'D'] %}
+              {% for choice in multiple_choice_choices %}
                 <th scope="col" class="choice-heading">{{ choice }}</th>
               {% endfor %}
             </tr>
@@ -27,7 +27,7 @@
               <tr>
                 <th scope="row">{{ question.number }}</th>
                 {% if question.expects_numeric_response %}
-                  <td class="free-response-cell" colspan="4">
+                  <td class="free-response-cell" colspan="{{ multiple_choice_choices|length }}">
                     <label class="sr-only" for="q_{{ question.number }}">Numeric response</label>
                     <input
                       type="text"
@@ -40,7 +40,7 @@
                     />
                   </td>
                 {% else %}
-                  {% for choice in ['A', 'B', 'C', 'D'] %}
+                  {% for choice in multiple_choice_choices %}
                     <td class="choice-cell">
                       <label class="choice-label" for="q_{{ question.number }}_{{ choice }}">
                         <input
