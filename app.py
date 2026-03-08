@@ -4,6 +4,7 @@ import csv
 import json
 import math
 import os
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
@@ -64,6 +65,35 @@ class TestDefinition:
     source: str
     path: Optional[Path] = None
     db_metadata: Optional[DatabaseTestMetadata] = None
+
+
+_TEST_NUMBER_PATTERN = re.compile(r"(?:test|t)\s*[_\-\s]?(\d+)", re.IGNORECASE)
+_MODULE_NUMBER_PATTERN = re.compile(r"(?:module|m)\s*[_\-\s]?(\d+)", re.IGNORECASE)
+_EMAIL_PATTERN = re.compile(r"^[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}$", re.IGNORECASE)
+
+
+def _extract_test_module_numbers(test: TestDefinition) -> Tuple[Optional[str], Optional[str]]:
+    test_number: Optional[str] = None
+    module_number: Optional[str] = None
+    for source in (test.name, test.identifier):
+        if not source:
+            continue
+        if test_number is None:
+            match = _TEST_NUMBER_PATTERN.search(source)
+            if match:
+                test_number = match.group(1)
+        if module_number is None:
+            match = _MODULE_NUMBER_PATTERN.search(source)
+            if match:
+                module_number = match.group(1)
+    return test_number, module_number
+
+
+def _build_question_link_prefix(test: TestDefinition) -> Optional[str]:
+    test_number, module_number = _extract_test_module_numbers(test)
+    if not test_number or not module_number:
+        return None
+    return f"https://www.hasantutoring.com/math-test-{test_number}-module-{module_number}/v/question"
 
 
 class QuestionBank:
@@ -537,6 +567,14 @@ def _compose_student_name(first_name: str, last_name: str) -> str:
     return first or last or "Student"
 
 
+def _normalize_email(email: str) -> str:
+    return (email or "").strip().lower()
+
+
+def _is_valid_email(email: str) -> bool:
+    return bool(_EMAIL_PATTERN.fullmatch(_normalize_email(email)))
+
+
 def _persist_submission(
     *,
     test: TestDefinition,
@@ -594,10 +632,11 @@ def _next_table_id(cursor, table_name: str) -> int:
     return int(row[0])
 
 
-def _get_or_create_student_id(cursor, first_name: str, last_name: str) -> int:
+def _get_or_create_student_id(cursor, first_name: str, last_name: str, email: str) -> int:
+    normalized_email = _normalize_email(email)
     cursor.execute(
         """
-        SELECT id
+        SELECT id, email
         FROM students
         WHERE LOWER(first_name) = LOWER(%s) AND LOWER(last_name) = LOWER(%s)
         """,
@@ -605,16 +644,26 @@ def _get_or_create_student_id(cursor, first_name: str, last_name: str) -> int:
     )
     row = cursor.fetchone()
     if row:
-        return row[0]
+        student_id, existing_email = row
+        if normalized_email and (existing_email or "").strip().lower() != normalized_email:
+            cursor.execute(
+                """
+                UPDATE students
+                SET email = %s
+                WHERE id = %s
+                """,
+                (normalized_email, student_id),
+            )
+        return student_id
 
     new_id = _next_table_id(cursor, "students")
     cursor.execute(
         """
-        INSERT INTO students (id, first_name, last_name)
-        VALUES (%s, %s, %s)
+        INSERT INTO students (id, first_name, last_name, email)
+        VALUES (%s, %s, %s, %s)
         RETURNING id
         """,
-        (new_id, first_name, last_name),
+        (new_id, first_name, last_name, normalized_email),
     )
     row = cursor.fetchone()
     if not row:
@@ -626,6 +675,7 @@ def _persist_student_and_responses(
     *,
     first_name: str,
     last_name: str,
+    email: str,
     test: TestDefinition,
     questions: List[Question],
     answers: Dict[int, str],
@@ -641,7 +691,7 @@ def _persist_student_and_responses(
     try:
         with psycopg2.connect(**DB_CONFIG) as conn:
             with conn.cursor() as cursor:
-                student_id = _get_or_create_student_id(cursor, first, last)
+                student_id = _get_or_create_student_id(cursor, first, last, email)
 
                 metadata = test.db_metadata
                 if metadata:
@@ -684,6 +734,7 @@ def index():
     selected_test_id = tests[0].identifier if tests else None
     first_name = ""
     last_name = ""
+    email = ""
 
     if request.method == "POST":
         if not tests:
@@ -692,6 +743,7 @@ def index():
         test_id = request.form.get("test_id", "").strip() or selected_test_id
         first_name = request.form.get("first_name", "").strip()
         last_name = request.form.get("last_name", "").strip()
+        email = request.form.get("email", "").strip()
 
         if not first_name or not last_name:
             flash("First and last name are required.")
@@ -701,6 +753,17 @@ def index():
                 selected_test_id=selected_test_id,
                 first_name=first_name,
                 last_name=last_name,
+                email=email,
+            )
+        if not _is_valid_email(email):
+            flash("A valid email address is required.")
+            return render_template(
+                "index.html",
+                tests=tests,
+                selected_test_id=selected_test_id,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
             )
 
         try:
@@ -716,6 +779,7 @@ def index():
                 test_id=selected_test_id,
                 first_name=first_name,
                 last_name=last_name,
+                email=_normalize_email(email),
             )
         )
 
@@ -723,6 +787,7 @@ def index():
         requested_test = request.args.get("test_id", "").strip()
         first_name = request.args.get("first_name", "").strip()
         last_name = request.args.get("last_name", "").strip()
+        email = request.args.get("email", "").strip()
         if requested_test:
             try:
                 question_bank.get_test(requested_test)
@@ -736,6 +801,7 @@ def index():
         selected_test_id=selected_test_id,
         first_name=first_name,
         last_name=last_name,
+        email=email,
     )
 
 
@@ -744,12 +810,15 @@ def entry():
     test_id = request.args.get("test_id", "").strip()
     first_name = request.args.get("first_name", "").strip()
     last_name = request.args.get("last_name", "").strip()
+    email = request.args.get("email", "").strip()
     student_name = _compose_student_name(first_name, last_name)
 
     if not test_id:
         abort(400, description="A test must be selected before entering answers.")
     if not first_name or not last_name:
         abort(400, description="First and last name are required to score a student.")
+    if not _is_valid_email(email):
+        abort(400, description="A valid email address is required to score a student.")
 
     try:
         test = question_bank.get_test(test_id)
@@ -764,6 +833,7 @@ def entry():
         student_name=student_name,
         first_name=first_name,
         last_name=last_name,
+        email=_normalize_email(email),
         questions=questions,
         multiple_choice_choices=MULTIPLE_CHOICE_CHOICES,
     )
@@ -783,8 +853,11 @@ def results():
     questions = question_bank.questions_for(test_id)
     first_name = request.form.get("first_name", "").strip()
     last_name = request.form.get("last_name", "").strip()
+    email = request.form.get("email", "").strip()
     if not first_name or not last_name:
         abort(400, description="First and last name are required to score a student.")
+    if not _is_valid_email(email):
+        abort(400, description="A valid email address is required to score a student.")
     student_name = _compose_student_name(first_name, last_name)
 
     answers: Dict[int, str] = {}
@@ -799,6 +872,7 @@ def results():
     _persist_student_and_responses(
         first_name=first_name,
         last_name=last_name,
+        email=_normalize_email(email),
         test=test,
         questions=questions,
         answers=answers,
@@ -816,6 +890,8 @@ def results():
         report_csv_path=saved_report_path,
         first_name=first_name,
         last_name=last_name,
+        email=_normalize_email(email),
+        question_link_prefix=_build_question_link_prefix(test),
     )
 
 

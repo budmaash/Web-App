@@ -12,6 +12,7 @@
       <input type="hidden" name="test_id" value="{{ test.identifier }}" />
       <input type="hidden" name="first_name" value="{{ first_name }}" />
       <input type="hidden" name="last_name" value="{{ last_name }}" />
+      <input type="hidden" name="email" value="{{ email }}" />
       <div class="table-wrapper">
         <table class="answer-table">
           <thead>
@@ -72,7 +73,7 @@
       </div>
     </form>
     <p class="form-footer-note">
-      <a href="{{ url_for('index', test_id=test.identifier, first_name=first_name, last_name=last_name) }}">Choose a different test or student</a>
+      <a href="{{ url_for('index', test_id=test.identifier, first_name=first_name, last_name=last_name, email=email) }}">Choose a different test or student</a>
     </p>
   </section>
 {% endblock %}

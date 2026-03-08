@@ -13,7 +13,7 @@
         <div class="sqs-block-content">
           <div class="sqs-block-button-container sqs-block-button-container--center">
             <div class="sqs-stretched">
-              <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name) }}" class="button sqs-block-button-element">Score Another Test</a>
+              <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name, email=email) }}" class="button sqs-block-button-element">Score Another Test</a>
             </div>
           </div>
         </div>
@@ -37,7 +37,20 @@
         <tbody>
           {% for row in report.per_question %}
             <tr class="{{ 'correct' if row.is_correct else 'incorrect' }}">
-              <td>{{ row.number }}</td>
+              <td>
+                {% if question_link_prefix %}
+                  <a
+                    href="{{ question_link_prefix }}{{ row.number }}"
+                    class="question-number-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ row.number }}
+                  </a>
+                {% else %}
+                  {{ row.number }}
+                {% endif %}
+              </td>
               <td>{{ row.student_answer }}</td>
               <td>{{ row.correct_answer }}</td>
               <td>{{ row.category }}</td>

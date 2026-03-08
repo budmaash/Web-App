@@ -4,7 +4,7 @@
   <section class="card">
     <h2>Begin scoring</h2>
     <p>
-      Choose the test you would like to score and enter the student's name. You'll enter the
+      Choose the test you would like to score and enter the student's name and email. You'll enter the
       question responses on the next screen.
     </p>
     {% if tests %}
@@ -26,6 +26,10 @@
         <div class="form-field">
           <label for="last_name">Last name</label>
           <input type="text" name="last_name" id="last_name" placeholder="e.g. Lee" value="{{ last_name }}" required />
+        </div>
+        <div class="form-field">
+          <label for="email">Email</label>
+          <input type="email" name="email" id="email" placeholder="e.g. jordan.lee@example.com" value="{{ email }}" required />
         </div>
         <div class="form-actions">
           <div class="sqs-block" data-definition-name="website.components.button">

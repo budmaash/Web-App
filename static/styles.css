@@ -385,6 +385,17 @@ table td {
   background-color: rgba(248, 113, 113, 0.12);
 }
 
+.question-number-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.question-number-link:hover,
+.question-number-link:focus {
+  text-decoration: underline;
+}
+
 .score-summary {
   display: flex;
   flex-wrap: wrap;
