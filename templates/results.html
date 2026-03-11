@@ -33,6 +33,81 @@
       overflow-x: auto;
     }
 
+    .results-card .table-wrapper.question-review-snapshot {
+      overflow-x: auto;
+    }
+
+    .results-card .table-wrapper.question-review-snapshot .question-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 480px;
+      background: #fff;
+      border-radius: 0.85rem;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      table-layout: auto;
+      margin: 0;
+    }
+
+    .results-card .table-wrapper.question-review-snapshot .question-table thead {
+      background: #f5f1e9;
+    }
+
+    .results-card .table-wrapper.question-review-snapshot .question-table th,
+    .results-card .table-wrapper.question-review-snapshot .question-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .results-card .table-wrapper.question-review-snapshot .question-table tr.correct td {
+      background-color: rgba(34, 197, 94, 0.09);
+    }
+
+    .results-card .table-wrapper.question-review-snapshot .question-table tr.incorrect td {
+      background-color: rgba(248, 113, 113, 0.12);
+    }
+
+    .results-card .table-wrapper.question-review-snapshot .question-number-link {
+      color: inherit;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .results-card .table-wrapper.question-review-snapshot .question-number-link:hover,
+    .results-card .table-wrapper.question-review-snapshot .question-number-link:focus {
+      text-decoration: underline;
+    }
+
+    .results-card .table-wrapper.question-breakdown-snapshot {
+      overflow-x: auto;
+    }
+
+    .results-card .table-wrapper.question-breakdown-snapshot .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 480px;
+      background: #fff;
+      border-radius: 0.85rem;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      table-layout: auto;
+      margin: 0;
+    }
+
+    .results-card .table-wrapper.question-breakdown-snapshot .breakdown-table thead {
+      background: #f5f1e9;
+    }
+
+    .results-card .table-wrapper.question-breakdown-snapshot .breakdown-table th,
+    .results-card .table-wrapper.question-breakdown-snapshot .breakdown-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
     .results-card .question-table,
     .results-card .breakdown-table {
       border-collapse: separate;
@@ -132,7 +207,7 @@
 
   <section class="card results-card">
     <h3><strong>Question review</strong></h3>
-    <div class="table-wrapper">
+    <div class="table-wrapper question-review-snapshot">
       <table class="question-table">
         <thead>
           <tr>
@@ -181,7 +256,7 @@
 
   <section class="card results-card">
     <h3><strong>Question-Type breakdown</strong></h3>
-    <div class="table-wrapper">
+    <div class="table-wrapper question-breakdown-snapshot">
       <table class="breakdown-table">
         <thead>
           <tr>
