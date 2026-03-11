@@ -1,19 +1,128 @@
 {% extends 'base.html' %}
 {% block title %}Score Report · SAT Math Score Tool{% endblock %}
 {% block content %}
-  <section class="card">
-    <h2>Score report for {{ student_name }}</h2>
+  <style>
+    .results-card {
+      width: min(980px, 92vw);
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      box-shadow: 0 18px 45px rgba(17, 17, 17, 0.08);
+      padding: clamp(1.5rem, 4vw, 2.75rem);
+      margin-bottom: 2rem;
+    }
+
+    .results-card--report {
+      margin-top: clamp(110px, 13vh, 170px);
+    }
+
+    @media (max-width: 640px) {
+      .results-card {
+        width: 100%;
+      }
+    }
+
+    .results-card .table-wrapper {
+      width: min(741px, 100%);
+      margin: 0 auto 1.5rem;
+      background: #fbfaf7;
+      border: 1px solid #e2ddd3;
+      border-radius: 12px;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+
+    .results-card .question-table,
+    .results-card .breakdown-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 92%;
+      table-layout: fixed;
+      margin: 0 auto;
+      border: 0;
+      background: transparent;
+      min-width: 480px;
+    }
+
+    .results-card .question-table thead,
+    .results-card .breakdown-table thead {
+      background: transparent;
+    }
+
+    .results-card .question-table thead tr,
+    .results-card .breakdown-table thead tr {
+      background: #e7e1d6;
+    }
+
+    .results-card .question-table th,
+    .results-card .question-table td,
+    .results-card .breakdown-table th,
+    .results-card .breakdown-table td {
+      padding: 8px 11px;
+      text-align: center;
+      vertical-align: middle;
+      border-bottom: 0;
+    }
+
+    .results-card .question-table thead th:first-child,
+    .results-card .breakdown-table thead th:first-child {
+      border-top-left-radius: 8px;
+      border-bottom-left-radius: 8px;
+    }
+
+    .results-card .question-table thead th:last-child,
+    .results-card .breakdown-table thead th:last-child {
+      border-top-right-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+
+    .results-card .question-table tbody tr + tr th,
+    .results-card .question-table tbody tr + tr td,
+    .results-card .breakdown-table tbody tr + tr th,
+    .results-card .breakdown-table tbody tr + tr td {
+      border-top: 1px solid #dddddd;
+    }
+
+    .results-card .question-table th:first-child,
+    .results-card .question-table td:first-child {
+      width: 10%;
+      text-align: left;
+      padding-left: 0.5rem;
+      padding-right: 3px;
+    }
+
+    .results-card .question-table th:nth-child(2),
+    .results-card .question-table td:nth-child(2) {
+      padding-left: 6px;
+    }
+
+    .results-card .breakdown-table th:first-child,
+    .results-card .breakdown-table td:first-child {
+      text-align: left;
+      padding-left: 0.5rem;
+    }
+
+    .results-card h2,
+    .results-card h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+  </style>
+
+  <section class="card results-card results-card--report">
+    <h2><strong>Score report for {{ student_name }}</strong></h2>
     <p class="test-meta"><strong>Test:</strong> {{ test_name }}</p>
     <div class="score-summary">
       <p><strong>Total correct:</strong> {{ report.correct_count }} / {{ report.total_questions }}</p>
       <p><strong>Accuracy:</strong> {{ '%.1f'|format(report.accuracy_pct) }}%</p>
     </div>
-    <div class="form-actions form-actions--right">
+    <div class="form-actions">
       <div class="sqs-block" data-definition-name="website.components.button">
         <div class="sqs-block-content">
-          <div class="sqs-block-button-container sqs-block-button-container--center">
+          <div class="sqs-block-button-container sqs-block-button-container--left">
             <div class="sqs-stretched">
-              <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name, email=email) }}" class="button sqs-block-button-element">Score Another Test</a>
+              <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name, email=email) }}" class="btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Score Another Test</a>
             </div>
           </div>
         </div>
@@ -21,8 +130,8 @@
     </div>
   </section>
 
-  <section class="card">
-    <h3>Question review</h3>
+  <section class="card results-card">
+    <h3><strong>Question review</strong></h3>
     <div class="table-wrapper">
       <table class="question-table">
         <thead>
@@ -70,10 +179,10 @@
     </div>
   </section>
 
-  <section class="card">
-    <h3>Question-Type breakdown</h3>
+  <section class="card results-card">
+    <h3><strong>Question-Type breakdown</strong></h3>
     <div class="table-wrapper">
-      <table>
+      <table class="breakdown-table">
         <thead>
           <tr>
             <th>Question-Type</th>

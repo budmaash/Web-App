@@ -895,6 +895,11 @@ def results():
     )
 
 
+@app.get("/ss_homepage")
+def ss_homepage_shell():
+    return render_template("ss_homepage_shell.html")
+
+
 if __name__ == "__main__":
     app.run(debug=True)
 @app.context_processor

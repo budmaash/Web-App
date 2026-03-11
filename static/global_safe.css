@@ -1,0 +1,109 @@
+@keyframes fonts-loading {
+  0%,
+  99% {
+    color: transparent;
+  }
+}
+
+html.wf-loading * {
+  animation: fonts-loading 3s;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@font-face {
+  font-family: proxima-nova;
+  src: url(https://use.typekit.net/af/3888dc/00000000000000007735e606/31/l?subset_id=2&fvd=n3&v=3) format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: auto;
+}
+
+@font-face {
+  font-family: proxima-nova;
+  src: url(https://use.typekit.net/af/d7ff92/00000000000000007735e609/31/l?subset_id=2&fvd=n4&v=3) format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: auto;
+}
+
+@font-face {
+  font-family: proxima-nova;
+  src: url(https://use.typekit.net/af/26f7ec/00000000000000007735e605/31/l?subset_id=2&fvd=n5&v=3) format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: auto;
+}
+
+@font-face {
+  font-family: proxima-nova;
+  src: url(https://use.typekit.net/af/e37e5a/00000000000000007735e60d/31/l?subset_id=2&fvd=n6&v=3) format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: auto;
+}
+
+@font-face {
+  font-family: proxima-nova;
+  src: url(https://use.typekit.net/af/5be242/00000000000000007735e603/31/l?subset_id=2&fvd=n7&v=3) format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: auto;
+}
+
+@font-face {
+  font-family: adobe-garamond-pro;
+  src: url(https://use.typekit.net/af/1a756d/00000000000000007735d927/31/l?subset_id=2&fvd=n4&v=3) format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: auto;
+}
+
+@font-face {
+  font-family: adobe-garamond-pro;
+  src: url(https://use.typekit.net/af/a4e080/00000000000000007735d91e/31/l?subset_id=2&fvd=n7&v=3) format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: auto;
+}
+
+[touch-action="none"] {
+  -ms-touch-action: none;
+  touch-action: none;
+}
+
+[touch-action="auto"] {
+  -ms-touch-action: auto;
+  touch-action: auto;
+}
+
+[touch-action="pan-x"] {
+  -ms-touch-action: pan-x;
+  touch-action: pan-x;
+}
+
+[touch-action="pan-y"] {
+  -ms-touch-action: pan-y;
+  touch-action: pan-y;
+}
+
+[touch-action="pan-x pan-y"],
+[touch-action="pan-y pan-x"] {
+  -ms-touch-action: pan-x pan-y;
+  touch-action: pan-x pan-y;
+}
+
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .header-blur-background {
+  }
+}
+
+.top-bun,
+.patty,
+.bottom-bun {
+  height: 1px;
+}

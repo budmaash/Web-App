@@ -4,8 +4,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}SAT Math Score Tool{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='global_safe.css') }}" />
+    <title>SS Homepage Shell</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='ss_homepage/user-account-core-deec763d109d5251-min.en-US.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='ss_homepage/website.components.button.styles.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='ss_homepage/website.components.html.styles.css') }}" />
@@ -119,18 +118,7 @@
         </div>
       </header>
 
-      <main id="page" class="container" role="main">
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <ul class="flash-messages">
-              {% for message in messages %}
-                <li>{{ message }}</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
-      </main>
+      <main id="page" class="container" role="main"></main>
 
       <footer class="sections" id="footer-sections" data-footer-sections>
         <section data-test="page-section" data-section-theme="light" class="page-section layout-engine-section background-width--full-bleed section-height--custom content-width--wide horizontal-alignment--center vertical-alignment--middle light" style="min-height: 10vh;">
