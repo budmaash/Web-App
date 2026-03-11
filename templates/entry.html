@@ -19,20 +19,69 @@
       }
     }
 
-    .entry-scoring-panel .table-wrapper {
-      width: min(525px, 100%);
-      margin: 0 auto 1.5rem;
-      background: #fbfaf7;
+    .form-actions {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    button,
+    .button,
+    .sqs-block-button-element {
+      border: 1px solid #111;
+      background: #111;
+      color: #fff;
+      padding: 0.85rem 2rem;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 50px;
+    }
+
+    button:hover,
+    .button:hover,
+    .sqs-block-button-element:hover {
+      background: #333;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    button:active,
+    .button:active,
+    .sqs-block-button-element:active {
+      transform: translateY(1px);
+    }
+
+    .answer-form {
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 0.9rem;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      background: #fffefa;
+    }
+
+    @media (min-width: 1100px) {
+      .answer-form {
+        width: 65%;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+
+    .table-wrapper {
       overflow-x: auto;
     }
 
-    .entry-scoring-panel .answer-table {
-      width: 75%;
+    table {
+      width: 100%;
       border-collapse: collapse;
-      margin: 0 auto;
       min-width: 480px;
       background: #fff;
       border-radius: 0.85rem;
@@ -40,66 +89,57 @@
       border: 1px solid var(--border);
     }
 
-    .entry-scoring-panel .answer-table thead {
-      background: transparent;
+    table thead {
+      background: #f5f1e9;
     }
 
-    .entry-scoring-panel .answer-table th,
-    .entry-scoring-panel .answer-table td {
-      padding: 8px 11px;
+    table th,
+    table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .answer-table th,
+    .answer-table td {
+      padding: 0.65rem 0.6rem;
+    }
+
+    .answer-table th:first-child {
+      width: 1%;
+      white-space: nowrap;
+    }
+
+    .answer-table .choice-heading,
+    .answer-table .choice-cell {
       text-align: center;
-      vertical-align: middle;
-      border-bottom: 0;
+      padding-left: 0.35rem;
+      padding-right: 0.35rem;
     }
 
-    .entry-scoring-panel .answer-table thead tr {
-      background: #e7e1d6;
+    .answer-table .free-response-cell {
+      padding: 0.75rem 1rem;
     }
 
-    .entry-scoring-panel .answer-table thead th:first-child,
-    .entry-scoring-panel .answer-table tbody th[scope='row'] {
-      width: 14%;
-      text-align: left;
-      padding-left: 0.5rem;
+    .free-response-input {
+      width: min(220px, 100%);
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.65rem;
+      border: 1px solid var(--border);
+      background: #fffefa;
+      color: inherit;
     }
 
-    .entry-scoring-panel .answer-table thead th:first-child {
-      border-top-left-radius: 8px;
-      border-bottom-left-radius: 8px;
+    .choice-label,
+    .choice-cell label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      column-gap: 0.35rem;
     }
 
-    .entry-scoring-panel .answer-table thead th:last-child {
-      border-top-right-radius: 8px;
-      border-bottom-right-radius: 8px;
-    }
-
-    .entry-scoring-panel .answer-table tbody tr + tr th,
-    .entry-scoring-panel .answer-table tbody tr + tr td {
-      border-top: 1px solid #dddddd;
-    }
-
-    .entry-scoring-panel .answer-table tbody th:first-child,
-    .entry-scoring-panel .answer-table tbody td:first-child {
-      padding-right: 6px;
-    }
-
-    .entry-scoring-panel .answer-table tbody th:nth-child(2),
-    .entry-scoring-panel .answer-table tbody td:nth-child(2) {
-      padding-left: 5px;
-    }
-
-    .entry-scoring-panel .answer-table .free-response-cell {
-      text-align: left;
-      padding-left: 5px;
-    }
-
-    .entry-scoring-panel .answer-table .free-response-input {
-      display: block;
-      margin: 0;
-    }
-
-    .entry-submit-row {
-      margin-top: 1rem;
+    .choice-label input[type='radio'] {
+      accent-color: var(--accent-muted);
     }
 
     .entry-footer-link {
@@ -123,7 +163,7 @@
       below. Multiple-choice questions use options A–D, while grid-in questions accept a numeric
       response. Leave a question unanswered to mark it as omitted.
     </p>
-    <form method="post" action="{{ url_for('results') }}" class="answer-form" id="entry-answer-form">
+    <form method="post" action="{{ url_for('results') }}" class="answer-form">
       <input type="hidden" name="test_id" value="{{ test.identifier }}" />
       <input type="hidden" name="first_name" value="{{ first_name }}" />
       <input type="hidden" name="last_name" value="{{ last_name }}" />
@@ -173,18 +213,18 @@
           </tbody>
         </table>
       </div>
-    </form>
-    <div class="form-actions entry-submit-row">
-      <div class="sqs-block" data-definition-name="website.components.button">
-        <div class="sqs-block-content">
-          <div class="sqs-block-button-container sqs-block-button-container--left">
-            <div class="sqs-stretched">
-              <button type="submit" form="entry-answer-form" class="btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Generate score report</button>
+      <div class="form-actions">
+        <div class="sqs-block" data-definition-name="website.components.button">
+          <div class="sqs-block-content">
+            <div class="sqs-block-button-container sqs-block-button-container--center">
+              <div class="sqs-stretched">
+                <button type="submit" class="sqs-block-button-element">Generate score report</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </form>
     <p class="form-footer-note entry-footer-link">
       <a href="{{ url_for('index', test_id=test.identifier, first_name=first_name, last_name=last_name, email=email) }}">Choose a different test or student</a>
     </p>
