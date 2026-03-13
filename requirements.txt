@@ -1,3 +1,6 @@
 gunicorn==23.0.0
 Flask==2.3.3
 psycopg2-binary==2.9.9
+auth0-server-python>=1.0.0b7
+flask[async]>=2.0.0
+python-dotenv>=1.0.0

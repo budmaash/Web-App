@@ -67,22 +67,33 @@
       box-shadow: 0 0 0 3px rgba(198, 167, 100, 0.25);
     }
 
-    .scoring-form-grid select {
-      appearance: none;
-      background-image: linear-gradient(45deg, transparent 50%, #5f5f5f 50%),
-        linear-gradient(135deg, #5f5f5f 50%, transparent 50%);
-      background-position: calc(100% - 18px) calc(50% - 4px), calc(100% - 12px) calc(50% - 4px);
-      background-size: 6px 6px;
-      background-repeat: no-repeat;
+    .scoring-form-grid .field--first-name {
+      grid-column: 1 / 2;
+    }
+
+    .scoring-form-grid .field--last-name {
+      grid-column: 2 / 3;
+    }
+
+    .scoring-form-grid .field--email {
+      grid-column: 1 / 2;
+    }
+
+    .scoring-form-grid .field--password {
+      grid-column: 1 / 2;
+    }
+
+    .scoring-form-grid .field--confirm-password {
+      grid-column: 2 / 3;
     }
 
     .scoring-form-grid .email-field {
-      grid-column: 1 / 2;
+      grid-column: 3 / 4;
       margin-top: 0;
     }
 
     .scoring-form-grid .action-field {
-      grid-column: 2 / 3;
+      grid-column: 1 / 2;
       margin-top: 0;
       padding-top: 1.95rem;
       display: flex;
@@ -98,6 +109,16 @@
     @media (max-width: 960px) {
       .scoring-form-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .scoring-form-grid .field--first-name,
+      .scoring-form-grid .field--last-name,
+      .scoring-form-grid .field--email,
+      .scoring-form-grid .field--password,
+      .scoring-form-grid .field--confirm-password,
+      .scoring-form-grid .email-field,
+      .scoring-form-grid .action-field {
+        grid-column: auto;
       }
     }
 
@@ -125,30 +146,32 @@
   </style>
 
   <section class="card begin-scoring-panel">
-    <h2>Begin scoring</h2>
+    <h2>Sign Up</h2>
     <p class="lead">
-      Choose the test you would like to score and enter the student's name. You'll enter the
-      question responses on the next screen.
+      Sign up to access user app features. This will allow scoring tests and tracking performance.
     </p>
     {% if tests %}
-      <form method="post" action="{{ url_for('index') }}" class="scoring-form-grid">
-        <div class="field">
-          <label for="test_id">Choose test</label>
-          <select name="test_id" id="test_id">
-            {% for test in tests %}
-              <option value="{{ test.identifier }}" {% if test.identifier == selected_test_id %}selected{% endif %}>
-                {{ test.name }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field">
+      <form method="post" action="{{ url_for('signup') }}" class="scoring-form-grid">
+        <input type="hidden" name="test_id" value="{{ selected_test_id }}" />
+        <div class="field field--first-name">
           <label for="first_name">First name</label>
           <input type="text" name="first_name" id="first_name" placeholder="e.g. Jordan" value="{{ first_name }}" required />
         </div>
-        <div class="field">
+        <div class="field field--last-name">
           <label for="last_name">Last name</label>
           <input type="text" name="last_name" id="last_name" placeholder="e.g. Lee" value="{{ last_name }}" required />
+        </div>
+        <div class="field field--email">
+          <label for="email">Email</label>
+          <input type="email" name="email" id="email" placeholder="e.g. jordan.lee@example.com" autocomplete="email" required />
+        </div>
+        <div class="field field--password">
+          <label for="password">Password</label>
+          <input type="password" name="password" id="password" autocomplete="new-password" required />
+        </div>
+        <div class="field field--confirm-password">
+          <label for="confirm_password">Confirm Password</label>
+          <input type="password" name="confirm_password" id="confirm_password" autocomplete="new-password" required />
         </div>
         <div class="email-field" aria-hidden="true"></div>
         <div class="action-field">
@@ -156,7 +179,7 @@
             <div class="sqs-block-content">
               <div class="sqs-block-button-container sqs-block-button-container--left">
                 <div class="sqs-stretched">
-                  <button type="submit" class="start-answers-btn btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Start entering answers</button>
+                  <button type="submit" class="start-answers-btn btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Sign Up</button>
                 </div>
               </div>
             </div>
