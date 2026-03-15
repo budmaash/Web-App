@@ -21,12 +21,36 @@
       margin: 0 0 1.2rem;
     }
 
+    .signup-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .signup-section-copy {
+      margin: 0;
+      color: #4f4f4f;
+    }
+
+    .signup-subcard {
+      border: 1px solid #2a2a2a;
+      border-radius: 0.95rem;
+      padding: clamp(1.5rem, 3vw, 2.5rem);
+      background: #fff;
+    }
+
+    .signup-subcard h3 {
+      margin: 0 0 0.9rem;
+      font-size: 2rem;
+      line-height: 1.1;
+      color: #151515;
+    }
+
     .scoring-form-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1rem 1.25rem;
       align-items: end;
-      margin-bottom: 1.5rem;
     }
 
     .scoring-form-grid .field {
@@ -75,35 +99,33 @@
       grid-column: 2 / 3;
     }
 
-    .scoring-form-grid .field--email {
-      grid-column: 1 / 2;
-    }
-
-    .scoring-form-grid .field--password {
-      grid-column: 1 / 2;
-    }
-
-    .scoring-form-grid .field--confirm-password {
-      grid-column: 2 / 3;
-    }
-
-    .scoring-form-grid .email-field {
-      grid-column: 3 / 4;
-      margin-top: 0;
-    }
-
     .scoring-form-grid .action-field {
       grid-column: 1 / 2;
       margin-top: 0;
-      padding-top: 1.95rem;
+      padding-top: 0.9rem;
       display: flex;
       align-items: end;
       justify-content: flex-start;
     }
 
-    .scoring-form-grid .action-field .start-answers-btn {
-      min-width: 214px;
-      min-height: 60px;
+    .login-subcard-actions {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .signup-subcard .start-answers-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 214px;
+      height: 60px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .signup-subcard .start-answers-btn.is-disabled {
+      opacity: 0.5;
+      pointer-events: none;
     }
 
     @media (max-width: 960px) {
@@ -113,10 +135,6 @@
 
       .scoring-form-grid .field--first-name,
       .scoring-form-grid .field--last-name,
-      .scoring-form-grid .field--email,
-      .scoring-form-grid .field--password,
-      .scoring-form-grid .field--confirm-password,
-      .scoring-form-grid .email-field,
       .scoring-form-grid .action-field {
         grid-column: auto;
       }
@@ -132,62 +150,72 @@
         grid-template-columns: 1fr;
       }
 
-      .scoring-form-grid .email-field,
       .scoring-form-grid .action-field {
         grid-column: auto;
         margin-top: 0;
       }
 
-      .scoring-form-grid .action-field .start-answers-btn {
+      .signup-subcard .start-answers-btn {
         width: 100%;
-        min-width: 0;
+        height: 60px;
       }
     }
   </style>
 
   <section class="card begin-scoring-panel">
-    <h2>Sign Up</h2>
-    <p class="lead">
-      Sign up to access user app features. This will allow scoring tests and tracking performance.
-    </p>
-    {% if tests %}
-      <form method="post" action="{{ url_for('signup') }}" class="scoring-form-grid">
-        <input type="hidden" name="test_id" value="{{ selected_test_id }}" />
-        <div class="field field--first-name">
-          <label for="first_name">First name</label>
-          <input type="text" name="first_name" id="first_name" placeholder="e.g. Jordan" value="{{ first_name }}" required />
-        </div>
-        <div class="field field--last-name">
-          <label for="last_name">Last name</label>
-          <input type="text" name="last_name" id="last_name" placeholder="e.g. Lee" value="{{ last_name }}" required />
-        </div>
-        <div class="field field--email">
-          <label for="email">Email</label>
-          <input type="email" name="email" id="email" placeholder="e.g. jordan.lee@example.com" autocomplete="email" required />
-        </div>
-        <div class="field field--password">
-          <label for="password">Password</label>
-          <input type="password" name="password" id="password" autocomplete="new-password" required />
-        </div>
-        <div class="field field--confirm-password">
-          <label for="confirm_password">Confirm Password</label>
-          <input type="password" name="confirm_password" id="confirm_password" autocomplete="new-password" required />
-        </div>
-        <div class="email-field" aria-hidden="true"></div>
-        <div class="action-field">
-          <div class="sqs-block" data-definition-name="website.components.button">
-            <div class="sqs-block-content">
-              <div class="sqs-block-button-container sqs-block-button-container--left">
-                <div class="sqs-stretched">
-                  <button type="submit" class="start-answers-btn btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Sign Up</button>
-                </div>
-              </div>
-            </div>
+    <div class="signup-shell">
+      <p class="signup-section-copy">Sign Up to use services</p>
+
+      <div class="signup-subcard">
+        <h3>Sign Up</h3>
+        <div class="scoring-form-grid">
+          <div class="field field--first-name">
+            <label for="first_name">First Name</label>
+            <input type="text" name="first_name" id="first_name" placeholder="Input Field" value="{{ first_name }}" />
+          </div>
+          <div class="field field--last-name">
+            <label for="last_name">Last Name</label>
+            <input type="text" name="last_name" id="last_name" placeholder="Input Field" value="{{ last_name }}" />
+          </div>
+          <div class="action-field">
+            <a
+              href="{{ url_for('auth_signup') }}"
+              id="signup-action"
+              class="start-answers-btn btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary is-disabled"
+              aria-disabled="true"
+            >
+              Sign Up
+            </a>
           </div>
         </div>
-      </form>
-    {% else %}
-      <p class="empty-state">No test files were found. Add one or more CSV files to the <code>data/</code> folder to begin scoring responses.</p>
-    {% endif %}
+      </div>
+
+      <p class="signup-section-copy">Already a Member? Log In to your account</p>
+
+      <div class="signup-subcard">
+        <h3>Log In</h3>
+        <div class="login-subcard-actions">
+          <a href="{{ auth0_login_url }}" class="start-answers-btn btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Log In</a>
+        </div>
+      </div>
+    </div>
   </section>
+
+  <script>
+    const signupFirstName = document.getElementById("first_name");
+    const signupLastName = document.getElementById("last_name");
+    const signupAction = document.getElementById("signup-action");
+
+    if (signupFirstName && signupLastName && signupAction) {
+      const syncSignupActionState = () => {
+        const enabled = signupFirstName.value.trim() && signupLastName.value.trim();
+        signupAction.classList.toggle("is-disabled", !enabled);
+        signupAction.setAttribute("aria-disabled", enabled ? "false" : "true");
+      };
+
+      signupFirstName.addEventListener("input", syncSignupActionState);
+      signupLastName.addEventListener("input", syncSignupActionState);
+      syncSignupActionState();
+    }
+  </script>
 {% endblock %}

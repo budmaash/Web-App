@@ -225,7 +225,7 @@
       </div>
     </form>
     <p class="form-footer-note entry-footer-link">
-      <a href="{{ url_for('index', test_id=test.identifier, first_name=first_name, last_name=last_name) }}">Choose a different test or student</a>
+      <a href="{{ url_for('dashboard', test_id=test.identifier, first_name=first_name, last_name=last_name) }}">Choose a different test or student</a>
     </p>
   </section>
 {% endblock %}

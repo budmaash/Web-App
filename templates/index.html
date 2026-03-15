@@ -90,6 +90,13 @@
       justify-content: flex-start;
     }
 
+    .dashboard-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
     .scoring-form-grid .action-field .start-answers-btn {
       min-width: 214px;
       min-height: 60px;
@@ -121,6 +128,12 @@
         width: 100%;
         min-width: 0;
       }
+
+      .dashboard-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
   </style>
 
@@ -131,7 +144,7 @@
       question responses on the next screen.
     </p>
     {% if tests %}
-      <form method="post" action="{{ url_for('index') }}" class="scoring-form-grid">
+      <form method="post" action="{{ url_for('dashboard') }}" class="scoring-form-grid">
         <div class="field">
           <label for="test_id">Choose test</label>
           <select name="test_id" id="test_id">
@@ -152,11 +165,22 @@
         </div>
         <div class="email-field" aria-hidden="true"></div>
         <div class="action-field">
-          <div class="sqs-block" data-definition-name="website.components.button">
-            <div class="sqs-block-content">
-              <div class="sqs-block-button-container sqs-block-button-container--left">
-                <div class="sqs-stretched">
-                  <button type="submit" class="start-answers-btn btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Start entering answers</button>
+          <div class="dashboard-actions">
+            <div class="sqs-block" data-definition-name="website.components.button">
+              <div class="sqs-block-content">
+                <div class="sqs-block-button-container sqs-block-button-container--left">
+                  <div class="sqs-stretched">
+                    <a href="{{ url_for('logout') }}" class="start-answers-btn btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Log Out</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sqs-block" data-definition-name="website.components.button">
+              <div class="sqs-block-content">
+                <div class="sqs-block-button-container sqs-block-button-container--left">
+                  <div class="sqs-stretched">
+                    <button type="submit" class="start-answers-btn btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Start entering answers</button>
+                  </div>
                 </div>
               </div>
             </div>

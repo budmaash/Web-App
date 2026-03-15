@@ -9,12 +9,19 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from functools import wraps
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from urllib.parse import urlencode
 
 import psycopg2
 from psycopg2 import sql
-from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from authlib.integrations.flask_client import OAuth
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 DATA_DIR = Path("data")
@@ -49,6 +56,29 @@ class Question:
 
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ.get(
+    "FLASK_SECRET_KEY",
+    os.environ.get("AUTH0_SECRET", "dev-secret-change-me"),
+)
+
+AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN", "").strip()
+AUTH0_CLIENT_ID = os.environ.get("AUTH0_CLIENT_ID", "").strip()
+AUTH0_CLIENT_SECRET = os.environ.get("AUTH0_SECRET", "").strip()
+AUTH0_REDIRECT_URI = os.environ.get("AUTH0_REDIRECT_URI", "").strip()
+AUTH0_LOGOUT_RETURN_TO = os.environ.get(
+    "AUTH0_LOGOUT_RETURN_TO",
+    "http://localhost:5000/",
+).strip()
+
+oauth = OAuth(app)
+if AUTH0_DOMAIN and AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET:
+    oauth.register(
+        "auth0",
+        client_id=AUTH0_CLIENT_ID,
+        client_secret=AUTH0_CLIENT_SECRET,
+        client_kwargs={"scope": "openid profile email"},
+        server_metadata_url=f"https://{AUTH0_DOMAIN}/.well-known/openid-configuration",
+    )
 
 
 @dataclass(frozen=True)
@@ -699,6 +729,39 @@ def _persist_student_and_responses(
         app.logger.warning("Failed to persist student/responses: %s", exc)
 
 
+def _is_authenticated() -> bool:
+    return bool(session.get("user"))
+
+
+def _login_required(view_func):
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if not _is_authenticated():
+            return redirect(url_for("login"))
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
+
+
+def _auth0_client():
+    client = getattr(oauth, "auth0", None)
+    if client is None:
+        abort(500, description="Auth0 is not configured.")
+    return client
+
+
+def _build_auth0_authorize_url(*, screen_hint: Optional[str] = None) -> str:
+    query = {
+        "client_id": AUTH0_CLIENT_ID,
+        "response_type": "code",
+        "redirect_uri": AUTH0_REDIRECT_URI or url_for("auth_callback", _external=True),
+        "scope": "openid profile email",
+    }
+    if screen_hint:
+        query["screen_hint"] = screen_hint
+    return f"https://{AUTH0_DOMAIN}/authorize?{urlencode(query)}"
+
+
 def _render_test_selection_page(template_name: str):
     tests = question_bank.available_tests()
     selected_test_id = tests[0].identifier if tests else None
@@ -758,22 +821,62 @@ def _render_test_selection_page(template_name: str):
     )
 
 
-@app.route("/", methods=["GET", "POST"])
-def index():
+def _render_auth_page(template_name: str):
+    if _is_authenticated():
+        return redirect(url_for("dashboard"))
+    return render_template(template_name)
+
+
+@app.get("/")
+def root():
+    if _is_authenticated():
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("signup"))
+
+
+@app.route("/dashboard", methods=["GET", "POST"])
+@_login_required
+def dashboard():
     return _render_test_selection_page("index.html")
 
 
-@app.route("/auth/signup", methods=["GET", "POST"])
+@app.get("/signup")
 def signup():
-    return _render_test_selection_page("signup.html")
+    return _render_auth_page("signup.html")
 
 
-@app.route("/auth/login", methods=["GET", "POST"])
-def login():
-    return _render_test_selection_page("login.html")
+@app.get("/logout")
+def logout():
+    session.clear()
+    query = urlencode(
+        {
+            "client_id": AUTH0_CLIENT_ID,
+            "returnTo": AUTH0_LOGOUT_RETURN_TO,
+        }
+    )
+    return redirect(f"https://{AUTH0_DOMAIN}/v2/logout?{query}")
+
+
+@app.get("/auth/signup")
+def auth_signup():
+    return _auth0_client().authorize_redirect(
+        redirect_uri=AUTH0_REDIRECT_URI or url_for("auth_callback", _external=True),
+        screen_hint="signup",
+    )
+
+
+@app.get("/auth/callback")
+def auth_callback():
+    token = _auth0_client().authorize_access_token()
+    userinfo = token.get("userinfo")
+    if not userinfo:
+        userinfo = _auth0_client().userinfo()
+    session["user"] = dict(userinfo)
+    return redirect(url_for("dashboard"))
 
 
 @app.get("/entry")
+@_login_required
 def entry():
     test_id = request.args.get("test_id", "").strip()
     first_name = request.args.get("first_name", "").strip()
@@ -804,6 +907,7 @@ def entry():
 
 
 @app.post("/results")
+@_login_required
 def results():
     test_id = request.form.get("test_id", "").strip()
     if not test_id:
@@ -863,4 +967,9 @@ if __name__ == "__main__":
     app.run(debug=True)
 @app.context_processor
 def inject_globals():
-    return {"current_year": datetime.utcnow().year}
+    return {
+        "current_year": datetime.utcnow().year,
+        "current_user": session.get("user"),
+        "is_authenticated": _is_authenticated(),
+        "auth0_login_url": _build_auth0_authorize_url(),
+    }
