@@ -157,17 +157,14 @@
   </style>
 
   <section class="card entry-scoring-panel">
-    <h2>Enter student responses</h2>
+    <h2>Enter responses</h2>
     <p>
-      Scoring {{ student_name or 'Student' }} for {{ test.name }}. Select the answer for each question
-      below. Multiple-choice questions use options A–D, while grid-in questions accept a numeric
-      response. Leave a question unanswered to mark it as omitted.
+      Scoring {{ test.name }}. Select the answer for each question below. Multiple-choice questions
+      use options A–D, while grid-in questions accept a numeric response. Leave a question
+      unanswered to mark it as omitted.
     </p>
     <form method="post" action="{{ url_for('results') }}" class="answer-form">
       <input type="hidden" name="test_id" value="{{ test.identifier }}" />
-      <input type="hidden" name="first_name" value="{{ first_name }}" />
-      <input type="hidden" name="last_name" value="{{ last_name }}" />
-      <input type="hidden" name="email" value="{{ email }}" />
       <div class="table-wrapper">
         <table class="answer-table">
           <thead>
@@ -226,7 +223,7 @@
       </div>
     </form>
     <p class="form-footer-note entry-footer-link">
-      <a href="{{ url_for('index', test_id=test.identifier, first_name=first_name, last_name=last_name, email=email) }}">Choose a different test or student</a>
+      <a href="{{ url_for('index', test_id=test.identifier) }}">Choose a different test</a>
     </p>
   </section>
 {% endblock %}

@@ -2,6 +2,84 @@
 {% block title %}Score Report · SAT Math Score Tool{% endblock %}
 {% block content %}
   <style>
+    .score-report-layout {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .score-report-copy {
+      max-width: 320px;
+    }
+
+    .score-report-visual {
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) minmax(170px, 220px);
+      gap: 1.5rem;
+      align-items: center;
+      justify-content: end;
+    }
+
+    .score-legend {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0.7rem;
+    }
+
+    .score-legend-item {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 0.65rem;
+      align-items: start;
+    }
+
+    .score-legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      margin-top: 0.22rem;
+      box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.08);
+    }
+
+    .score-legend-label {
+      display: block;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .score-chart-wrap {
+      display: grid;
+      justify-items: center;
+      gap: 0.9rem;
+    }
+
+    .score-chart-title {
+      margin: 0;
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .score-chart {
+      width: clamp(220px, 24vw, 280px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 2px solid rgba(17, 17, 17, 0.75);
+      background: #f0ece4;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    }
+
+    .score-chart-note {
+      margin: 0;
+      text-align: center;
+      color: #5f5a52;
+      font-size: 0.95rem;
+      max-width: 24ch;
+    }
+
     .results-card {
       width: min(980px, 92vw);
       margin: 0 auto;
@@ -20,6 +98,26 @@
     @media (max-width: 640px) {
       .results-card {
         width: 100%;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .score-report-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .score-report-visual {
+        grid-template-columns: 1fr;
+        justify-content: start;
+      }
+
+      .score-chart-wrap {
+        justify-items: start;
+      }
+
+      .score-chart-title,
+      .score-chart-note {
+        text-align: left;
       }
     }
 
@@ -70,13 +168,19 @@
     }
 
     .results-card .table-wrapper.question-review-snapshot .question-number-link {
-      color: inherit;
+      color: blue;
       font-weight: 600;
       text-decoration: none;
     }
 
+    .results-card .table-wrapper.question-review-snapshot .question-number-link:visited {
+      color: purple;
+    }
+
     .results-card .table-wrapper.question-review-snapshot .question-number-link:hover,
-    .results-card .table-wrapper.question-review-snapshot .question-number-link:focus {
+    .results-card .table-wrapper.question-review-snapshot .question-number-link:focus,
+    .results-card .table-wrapper.question-review-snapshot .question-number-link:active {
+      color: red;
       text-decoration: underline;
     }
 
@@ -185,21 +289,69 @@
     }
   </style>
 
+  {% set chart_palette = ['#D1495B', '#EDA247', '#EBCB5D', '#5B8E7D', '#4D7EA8', '#7B5EA7', '#C06C84', '#6C8EAD'] %}
+  {% set missed_breakdown = report.missed_question_breakdown %}
+  {% if missed_breakdown %}
+    {% set chart_state = namespace(segments=[]) %}
+    {% for item in missed_breakdown %}
+      {% set color = chart_palette[loop.index0 % chart_palette|length] %}
+      {% set segment = color ~ ' ' ~ '%.2f'|format(item.share_pct) ~ '%' %}
+      {% set chart_state.segments = chart_state.segments + [segment] %}
+    {% endfor %}
+    {% set chart_background = 'conic-gradient(' ~ chart_state.segments|join(', ') ~ ')' %}
+  {% else %}
+    {% set chart_background = '#f0ece4' %}
+  {% endif %}
+
   <section class="card results-card results-card--report">
-    <h2><strong>Score report for {{ student_name }}</strong></h2>
-    <p class="test-meta"><strong>Test:</strong> {{ test_name }}</p>
-    <div class="score-summary">
-      <p><strong>Total correct:</strong> {{ report.correct_count }} / {{ report.total_questions }}</p>
-      <p><strong>Accuracy:</strong> {{ '%.1f'|format(report.accuracy_pct) }}%</p>
-    </div>
-    <div class="form-actions">
-      <div class="sqs-block" data-definition-name="website.components.button">
-        <div class="sqs-block-content">
-          <div class="sqs-block-button-container sqs-block-button-container--left">
-            <div class="sqs-stretched">
-              <a href="{{ url_for('index', test_id=test_id, first_name=first_name, last_name=last_name, email=email) }}" class="btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Score Another Test</a>
+    <div class="score-report-layout">
+      <div class="score-report-copy">
+        <h2><strong>Score Report</strong></h2>
+        <p class="test-meta"><strong>Test:</strong> {{ test_name }}</p>
+        <div class="score-summary">
+          <p><strong>Total correct:</strong> {{ report.correct_count }} / {{ report.total_questions }}</p>
+          <p><strong>Accuracy:</strong> {{ '%.1f'|format(report.accuracy_pct) }}%</p>
+        </div>
+        <div class="form-actions">
+          <div class="sqs-block" data-definition-name="website.components.button">
+            <div class="sqs-block-content">
+              <div class="sqs-block-button-container sqs-block-button-container--left">
+                <div class="sqs-stretched">
+                  <a href="{{ url_for('index', test_id=test_id) }}" class="btn btn--border theme-btn--primary-inverse sqs-button-element--tertiary">Score Another Test</a>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="score-report-visual">
+        <div class="score-chart-wrap">
+          <p class="score-chart-title">Questions Missed By Type</p>
+          <div
+            class="score-chart"
+            style="background: {{ chart_background }};"
+            aria-label="Pie chart showing missed questions by question type"
+          ></div>
+          <p class="score-chart-note">
+            Questions missed: {{ report.missed_count }}
+          </p>
+        </div>
+        <div>
+          {% if missed_breakdown %}
+            <ul class="score-legend">
+              {% for item in missed_breakdown %}
+                {% set color = chart_palette[loop.index0 % chart_palette|length] %}
+                <li class="score-legend-item">
+                  <span class="score-legend-swatch" style="background: {{ color }};"></span>
+                  <span>
+                    <span class="score-legend-label">{{ item.category }}</span>
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="score-chart-note">No missed question types. Every question was answered correctly.</p>
+          {% endif %}
         </div>
       </div>
     </div>

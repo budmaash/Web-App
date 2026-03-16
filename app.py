@@ -13,13 +13,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import psycopg2
-from psycopg2 import sql
 from flask import Flask, abort, redirect, render_template, request, url_for
 
 
 DATA_DIR = Path("data")
 CATEGORY_DB_DIR = DATA_DIR / "category_db"
-RESULTS_DIR = Path("results")
 DB_CONFIG = {
     "host": os.environ.get("SAT_DB_HOST", "localhost"),
     "port": int(os.environ.get("SAT_DB_PORT", "5432")),
@@ -69,9 +67,6 @@ class TestDefinition:
 
 _TEST_NUMBER_PATTERN = re.compile(r"(?:test|t)\s*[_\-\s]?(\d+)", re.IGNORECASE)
 _MODULE_NUMBER_PATTERN = re.compile(r"(?:module|m)\s*[_\-\s]?(\d+)", re.IGNORECASE)
-_EMAIL_PATTERN = re.compile(r"^[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}$", re.IGNORECASE)
-
-
 def _extract_test_module_numbers(test: TestDefinition) -> Tuple[Optional[str], Optional[str]]:
     test_number: Optional[str] = None
     module_number: Optional[str] = None
@@ -357,6 +352,7 @@ class QuestionBank:
 def build_score_report(student_answers: Dict[int, str], questions: List[Question]):
     per_question = []
     category_totals: Dict[str, Dict[str, int]] = defaultdict(lambda: {"total": 0, "correct": 0})
+    missed_totals: Dict[str, int] = defaultdict(int)
     correct_count = 0
 
     for question in questions:
@@ -367,6 +363,8 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
         if is_correct:
             correct_count += 1
             category_totals[question.category]["correct"] += 1
+        else:
+            missed_totals[question.category] += 1
 
         per_question.append(
             {
@@ -403,6 +401,21 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
             }
         )
 
+    total_missed = total_questions - correct_count
+    missed_question_breakdown = []
+    if total_missed:
+        for category, missed_count in sorted(
+            missed_totals.items(),
+            key=lambda item: (-item[1], item[0].lower()),
+        ):
+            missed_question_breakdown.append(
+                {
+                    "category": category,
+                    "missed": missed_count,
+                    "share_pct": (missed_count / total_missed) * 100,
+                }
+            )
+
     return {
         "per_question": per_question,
         "correct_count": correct_count,
@@ -410,6 +423,8 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
         "accuracy_pct": accuracy * 100 if total_questions else 0,
         "scaled_score": scaled_score,
         "category_breakdown": category_breakdown,
+        "missed_question_breakdown": missed_question_breakdown,
+        "missed_count": total_missed,
     }
 
 
@@ -512,66 +527,6 @@ def _normalize_category_key(value: str) -> str:
 
 question_bank = QuestionBank(DATA_DIR)
 
-
-def _sanitize_filename_segment(value: str) -> str:
-    if not value:
-        return "student"
-
-    allowed = [ch for ch in value if ch.isalnum() or ch in ("-", "_")]
-    sanitized = "".join(allowed).strip("-_")
-    return sanitized or "student"
-
-
-def _save_score_report(report, student_name: str, test: TestDefinition) -> str:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    safe_student = _sanitize_filename_segment(student_name)
-    filename = f"{test.identifier}_{safe_student}_{timestamp}.csv"
-    destination = RESULTS_DIR / filename
-
-    with destination.open("w", newline="") as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(["question_number", "student_answer", "category", "status"])
-        for row in report["per_question"]:
-            if row["is_correct"]:
-                status = "Correct"
-            elif not row["raw_student_answer"]:
-                status = "Omitted"
-            else:
-                status = "Incorrect"
-
-            writer.writerow(
-                [
-                    row["number"],
-                    row["raw_student_answer"],
-                    row["category"],
-                    status,
-                ]
-            )
-
-    try:
-        return str(destination.relative_to(Path.cwd()))
-    except ValueError:
-        return str(destination)
-
-
-def _compose_student_name(first_name: str, last_name: str) -> str:
-    first = (first_name or "").strip()
-    last = (last_name or "").strip()
-    if first and last:
-        return f"{first} {last}"
-    return first or last or "Student"
-
-
-def _normalize_email(email: str) -> str:
-    return (email or "").strip().lower()
-
-
-def _is_valid_email(email: str) -> bool:
-    return bool(_EMAIL_PATTERN.fullmatch(_normalize_email(email)))
-
-
 def _persist_submission(
     *,
     test: TestDefinition,
@@ -620,118 +575,10 @@ def _persist_submission(
         app.logger.warning("Failed to persist submission to Postgres: %s", exc)
 
 
-def _next_table_id(cursor, table_name: str) -> int:
-    query = sql.SQL("SELECT COALESCE(MAX(id), 0) + 1 FROM {}").format(sql.Identifier(table_name))
-    cursor.execute(query)
-    row = cursor.fetchone()
-    if not row:
-        raise RuntimeError(f"Unable to compute next id for table '{table_name}'.")
-    return int(row[0])
-
-
-def _get_or_create_student_id(cursor, first_name: str, last_name: str, email: str) -> int:
-    normalized_email = _normalize_email(email)
-    cursor.execute(
-        """
-        SELECT id, email
-        FROM students
-        WHERE LOWER(first_name) = LOWER(%s) AND LOWER(last_name) = LOWER(%s)
-        """,
-        (first_name, last_name),
-    )
-    row = cursor.fetchone()
-    if row:
-        student_id, existing_email = row
-        if normalized_email and (existing_email or "").strip().lower() != normalized_email:
-            cursor.execute(
-                """
-                UPDATE students
-                SET email = %s
-                WHERE id = %s
-                """,
-                (normalized_email, student_id),
-            )
-        return student_id
-
-    new_id = _next_table_id(cursor, "students")
-    cursor.execute(
-        """
-        INSERT INTO students (id, first_name, last_name, email)
-        VALUES (%s, %s, %s, %s)
-        RETURNING id
-        """,
-        (new_id, first_name, last_name, normalized_email),
-    )
-    row = cursor.fetchone()
-    if not row:
-        raise RuntimeError("Failed to insert student record.")
-    return row[0]
-
-
-def _persist_student_and_responses(
-    *,
-    first_name: str,
-    last_name: str,
-    email: str,
-    test: TestDefinition,
-    questions: List[Question],
-    answers: Dict[int, str],
-) -> None:
-    if not DB_ENABLED:
-        return
-
-    first = (first_name or "").strip()
-    last = (last_name or "").strip()
-    if not first or not last:
-        return
-
-    try:
-        with psycopg2.connect(**DB_CONFIG) as conn:
-            with conn.cursor() as cursor:
-                student_id = _get_or_create_student_id(cursor, first, last, email)
-
-                metadata = test.db_metadata
-                if metadata:
-                    next_response_id = _next_table_id(cursor, "responses")
-                    for question in questions:
-                        if question.db_question_id is None:
-                            continue
-                        cursor.execute(
-                            """
-                            INSERT INTO responses (
-                                id,
-                                student_id,
-                                test_id,
-                                section_id,
-                                module_id,
-                                test_question_number_id,
-                                responses
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-                            """,
-                            (
-                                next_response_id,
-                                student_id,
-                                metadata.test_id,
-                                metadata.section_id,
-                                metadata.module_id,
-                                question.db_question_id,
-                                answers.get(question.number, ""),
-                            ),
-                        )
-                        next_response_id += 1
-
-            conn.commit()
-    except psycopg2.Error as exc:
-        app.logger.warning("Failed to persist student/responses: %s", exc)
-
-
 @app.route("/", methods=["GET", "POST"])
 def index():
     tests = question_bank.available_tests()
     selected_test_id = tests[0].identifier if tests else None
-    first_name = ""
-    last_name = ""
-    email = ""
 
     if request.method == "POST":
         if not tests:
@@ -750,17 +597,11 @@ def index():
             url_for(
                 "entry",
                 test_id=selected_test_id,
-                first_name=first_name,
-                last_name=last_name,
-                email=_normalize_email(email),
             )
         )
 
     if request.method == "GET" and tests:
         requested_test = request.args.get("test_id", "").strip()
-        first_name = request.args.get("first_name", "").strip()
-        last_name = request.args.get("last_name", "").strip()
-        email = request.args.get("email", "").strip()
         if requested_test:
             try:
                 question_bank.get_test(requested_test)
@@ -772,19 +613,12 @@ def index():
         "index.html",
         tests=tests,
         selected_test_id=selected_test_id,
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
     )
 
 
 @app.get("/entry")
 def entry():
     test_id = request.args.get("test_id", "").strip()
-    first_name = request.args.get("first_name", "").strip()
-    last_name = request.args.get("last_name", "").strip()
-    email = _normalize_email(request.args.get("email", ""))
-    student_name = _compose_student_name(first_name, last_name)
 
     if not test_id:
         abort(400, description="A test must be selected before entering answers.")
@@ -799,10 +633,6 @@ def entry():
     return render_template(
         "entry.html",
         test=test,
-        student_name=student_name,
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
         questions=questions,
         multiple_choice_choices=MULTIPLE_CHOICE_CHOICES,
     )
@@ -820,10 +650,6 @@ def results():
         abort(400, description=str(exc))
 
     questions = question_bank.questions_for(test_id)
-    first_name = request.form.get("first_name", "").strip()
-    last_name = request.form.get("last_name", "").strip()
-    email = _normalize_email(request.form.get("email", ""))
-    student_name = _compose_student_name(first_name, last_name)
 
     answers: Dict[int, str] = {}
     for question in questions:
@@ -834,28 +660,13 @@ def results():
 
     report = build_score_report(answers, questions)
 
-    _persist_student_and_responses(
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
-        test=test,
-        questions=questions,
-        answers=answers,
-    )
-
-    saved_report_path = _save_score_report(report, student_name, test)
-    _persist_submission(test=test, student_name=student_name, answers=answers, report=report)
+    _persist_submission(test=test, student_name="Student", answers=answers, report=report)
 
     return render_template(
         "results.html",
-        student_name=student_name,
         test_id=test.identifier,
         test_name=test.name,
         report=report,
-        report_csv_path=saved_report_path,
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
         question_link_prefix=_build_question_link_prefix(test),
     )
 

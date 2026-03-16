@@ -21,7 +21,6 @@ This project provides a lightweight web application for entering student respons
 │   ├── category_db/
 │   │   └── SAT_Question_Categories.csv  # Lookup table that maps category_type_id values to labels
 │   └── *.csv             # One or more answer keys with category metadata
-├── results/              # Generated score report CSVs (created on demand)
 ├── static/
 │   └── styles.css        # Styling for the UI
 └── templates/
@@ -63,9 +62,8 @@ When a local PostgreSQL instance is running, the app now does two things:
    reflected immediately in the UI alongside the CSV-based tests that live in
    `data/`.
 2. **Archives submissions.** Every score report is stored in a `submissions`
-   table for external analytics, along with a `students` roster (deduped by
-   first/last name) plus one row per question in the `responses` table tying the
-   student's answer to the appropriate test/section/module metadata.
+   table for external analytics. Each row stores the submitted answers, the
+   computed results payload, the category breakdown, and summary scoring fields.
 
 The default connection details are:
 
