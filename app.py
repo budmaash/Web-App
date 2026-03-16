@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Tuple
 
 import psycopg2
 from psycopg2 import sql
-from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from flask import Flask, abort, redirect, render_template, request, url_for
 
 
 DATA_DIR = Path("data")
@@ -105,10 +105,7 @@ class QuestionBank:
         self._category_lookup = self._load_category_lookup()
 
     def available_tests(self) -> List[TestDefinition]:
-        tests: List[TestDefinition] = []
-        tests.extend(self._available_csv_tests())
-        tests.extend(self._available_database_tests())
-        return tests
+        return self._available_database_tests()
 
     def _available_csv_tests(self) -> List[TestDefinition]:
         tests: List[TestDefinition] = []
@@ -741,30 +738,6 @@ def index():
             abort(400, description="No test files are available to score.")
 
         test_id = request.form.get("test_id", "").strip() or selected_test_id
-        first_name = request.form.get("first_name", "").strip()
-        last_name = request.form.get("last_name", "").strip()
-        email = request.form.get("email", "").strip()
-
-        if not first_name or not last_name:
-            flash("First and last name are required.")
-            return render_template(
-                "index.html",
-                tests=tests,
-                selected_test_id=selected_test_id,
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-            )
-        if not _is_valid_email(email):
-            flash("A valid email address is required.")
-            return render_template(
-                "index.html",
-                tests=tests,
-                selected_test_id=selected_test_id,
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-            )
 
         try:
             question_bank.get_test(test_id)
@@ -810,15 +783,11 @@ def entry():
     test_id = request.args.get("test_id", "").strip()
     first_name = request.args.get("first_name", "").strip()
     last_name = request.args.get("last_name", "").strip()
-    email = request.args.get("email", "").strip()
+    email = _normalize_email(request.args.get("email", ""))
     student_name = _compose_student_name(first_name, last_name)
 
     if not test_id:
         abort(400, description="A test must be selected before entering answers.")
-    if not first_name or not last_name:
-        abort(400, description="First and last name are required to score a student.")
-    if not _is_valid_email(email):
-        abort(400, description="A valid email address is required to score a student.")
 
     try:
         test = question_bank.get_test(test_id)
@@ -833,7 +802,7 @@ def entry():
         student_name=student_name,
         first_name=first_name,
         last_name=last_name,
-        email=_normalize_email(email),
+        email=email,
         questions=questions,
         multiple_choice_choices=MULTIPLE_CHOICE_CHOICES,
     )
@@ -853,11 +822,7 @@ def results():
     questions = question_bank.questions_for(test_id)
     first_name = request.form.get("first_name", "").strip()
     last_name = request.form.get("last_name", "").strip()
-    email = request.form.get("email", "").strip()
-    if not first_name or not last_name:
-        abort(400, description="First and last name are required to score a student.")
-    if not _is_valid_email(email):
-        abort(400, description="A valid email address is required to score a student.")
+    email = _normalize_email(request.form.get("email", ""))
     student_name = _compose_student_name(first_name, last_name)
 
     answers: Dict[int, str] = {}
@@ -872,7 +837,7 @@ def results():
     _persist_student_and_responses(
         first_name=first_name,
         last_name=last_name,
-        email=_normalize_email(email),
+        email=email,
         test=test,
         questions=questions,
         answers=answers,
@@ -890,7 +855,7 @@ def results():
         report_csv_path=saved_report_path,
         first_name=first_name,
         last_name=last_name,
-        email=_normalize_email(email),
+        email=email,
         question_link_prefix=_build_question_link_prefix(test),
     )
 

@@ -13,6 +13,10 @@
       margin-bottom: 2rem;
     }
 
+    .begin-scoring-panel + .begin-scoring-panel {
+      margin-top: 0.5rem;
+    }
+
     .begin-scoring-panel h2 {
       margin-top: 0;
     }
@@ -23,10 +27,11 @@
 
     .scoring-form-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: 500px auto;
       gap: 1rem 1.25rem;
       align-items: end;
       margin-bottom: 1.5rem;
+      justify-content: start;
     }
 
     .scoring-form-grid .field {
@@ -34,6 +39,8 @@
       display: flex;
       flex-direction: column;
       min-width: 0;
+      width: 500px;
+      max-width: 100%;
     }
 
     .scoring-form-grid .field label {
@@ -44,7 +51,6 @@
       color: #151515;
     }
 
-    .scoring-form-grid input,
     .scoring-form-grid select {
       width: 100%;
       max-width: 100%;
@@ -60,7 +66,6 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .scoring-form-grid input:focus,
     .scoring-form-grid select:focus {
       outline: none;
       border-color: #c6a764;
@@ -76,18 +81,13 @@
       background-repeat: no-repeat;
     }
 
-    .scoring-form-grid .email-field {
-      grid-column: 1 / 2;
-      margin-top: 0;
-    }
-
     .scoring-form-grid .action-field {
-      grid-column: 2 / 3;
       margin-top: 0;
       padding-top: 1.95rem;
       display: flex;
       align-items: end;
       justify-content: flex-start;
+      width: fit-content;
     }
 
     .scoring-form-grid .action-field .start-answers-btn {
@@ -97,7 +97,11 @@
 
     @media (max-width: 960px) {
       .scoring-form-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
+      }
+
+      .scoring-form-grid .action-field {
+        margin-top: 0;
       }
     }
 
@@ -105,16 +109,6 @@
       .begin-scoring-panel {
         width: 100%;
         margin-top: 110px;
-      }
-
-      .scoring-form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .scoring-form-grid .email-field,
-      .scoring-form-grid .action-field {
-        grid-column: auto;
-        margin-top: 0;
       }
 
       .scoring-form-grid .action-field .start-answers-btn {
@@ -125,34 +119,28 @@
   </style>
 
   <section class="card begin-scoring-panel">
+    <h2>How to use this app</h2>
+    <p class="lead">
+      Enter your answers to any of the 12 SAT Math modules (provided below), and the app will generate a personalized score report showing your performance by question type. Each report includes links to video explanations for every question and concept videos for each skill, making it easy to review mistakes and improve efficiently.
+    </p>
+  </section>
+
+  <section class="card begin-scoring-panel">
     <h2>Begin scoring</h2>
     <p class="lead">
-      Choose the test you would like to score and enter the student's name and email. You'll enter the
-      question responses on the next screen.
+      Choose the test you would like to score. You'll enter the question responses on the next screen.
     </p>
     {% if tests %}
       <form method="post" action="{{ url_for('index') }}" class="scoring-form-grid">
         <div class="field">
-          <label for="test_id">Choose test</label>
-          <select name="test_id" id="test_id">
+          <label for="test_id_duplicate">Choose test</label>
+          <select name="test_id" id="test_id_duplicate">
             {% for test in tests %}
               <option value="{{ test.identifier }}" {% if test.identifier == selected_test_id %}selected{% endif %}>
                 {{ test.name }}
               </option>
             {% endfor %}
           </select>
-        </div>
-        <div class="field">
-          <label for="first_name">First name</label>
-          <input type="text" name="first_name" id="first_name" placeholder="e.g. Jordan" value="{{ first_name }}" required />
-        </div>
-        <div class="field">
-          <label for="last_name">Last name</label>
-          <input type="text" name="last_name" id="last_name" placeholder="e.g. Lee" value="{{ last_name }}" required />
-        </div>
-        <div class="field email-field">
-          <label for="email">Email</label>
-          <input type="email" name="email" id="email" placeholder="e.g. jordan.lee@example.com" value="{{ email }}" required />
         </div>
         <div class="action-field">
           <div class="sqs-block" data-definition-name="website.components.button">
@@ -167,7 +155,7 @@
         </div>
       </form>
     {% else %}
-      <p class="empty-state">No test files were found. Add one or more CSV files to the <code>data/</code> folder to begin scoring responses.</p>
+      <p class="empty-state">No tests are currently available. Check the database connection and question records, then reload the page.</p>
     {% endif %}
   </section>
 {% endblock %}
