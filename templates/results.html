@@ -66,10 +66,83 @@
     .score-chart {
       width: clamp(220px, 24vw, 280px);
       aspect-ratio: 1;
-      border-radius: 50%;
-      border: 2px solid rgba(17, 17, 17, 0.75);
-      background: #f0ece4;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+      display: block;
+      overflow: visible;
+    }
+
+    .score-chart-shell {
+      position: relative;
+      width: clamp(220px, 24vw, 280px);
+      aspect-ratio: 1;
+    }
+
+    .score-chart-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 10px 18px rgba(17, 17, 17, 0.08));
+    }
+
+    .score-chart-empty {
+      fill: #f0ece4;
+      stroke: rgba(17, 17, 17, 0.75);
+      stroke-width: 2;
+    }
+
+    .score-chart-sector {
+      cursor: pointer;
+      stroke: rgba(255, 255, 255, 0.96);
+      stroke-width: 2.25;
+      transition: transform 0.16s ease, filter 0.16s ease;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .score-chart-sector:hover,
+    .score-chart-sector:focus-visible,
+    .score-chart-sector.is-active {
+      transform: scale(1.03);
+      filter: brightness(1.03);
+      outline: none;
+    }
+
+    .score-chart-tooltip {
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      transform: translateX(-50%);
+      min-width: 170px;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0.8rem;
+      background: rgba(17, 17, 17, 0.93);
+      color: #fff;
+      text-align: center;
+      line-height: 1.35;
+      font-size: 0.92rem;
+      box-shadow: 0 14px 30px rgba(17, 17, 17, 0.22);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+    }
+
+    .score-chart-tooltip.is-visible {
+      opacity: 1;
+    }
+
+    .score-chart-tooltip::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      width: 12px;
+      height: 12px;
+      background: rgba(17, 17, 17, 0.93);
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .score-chart-tooltip-title {
+      display: block;
+      font-weight: 700;
     }
 
     .score-chart-note {
@@ -291,17 +364,6 @@
 
   {% set chart_palette = ['#D1495B', '#EDA247', '#EBCB5D', '#5B8E7D', '#4D7EA8', '#7B5EA7', '#C06C84', '#6C8EAD'] %}
   {% set missed_breakdown = report.missed_question_breakdown %}
-  {% if missed_breakdown %}
-    {% set chart_state = namespace(segments=[]) %}
-    {% for item in missed_breakdown %}
-      {% set color = chart_palette[loop.index0 % chart_palette|length] %}
-      {% set segment = color ~ ' ' ~ '%.2f'|format(item.share_pct) ~ '%' %}
-      {% set chart_state.segments = chart_state.segments + [segment] %}
-    {% endfor %}
-    {% set chart_background = 'conic-gradient(' ~ chart_state.segments|join(', ') ~ ')' %}
-  {% else %}
-    {% set chart_background = '#f0ece4' %}
-  {% endif %}
 
   <section class="card results-card results-card--report">
     <div class="score-report-layout">
@@ -327,11 +389,18 @@
       <div class="score-report-visual">
         <div class="score-chart-wrap">
           <p class="score-chart-title">Questions Missed By Type</p>
-          <div
-            class="score-chart"
-            style="background: {{ chart_background }};"
-            aria-label="Pie chart showing missed questions by question type"
-          ></div>
+          <div class="score-chart-shell">
+            <div class="score-chart-tooltip" data-score-chart-tooltip aria-live="polite"></div>
+            <svg
+              class="score-chart score-chart-svg"
+              viewBox="0 0 220 220"
+              data-score-chart
+              data-chart='{{ missed_breakdown|tojson }}'
+              data-palette='{{ chart_palette|tojson }}'
+              aria-label="Pie chart showing missed questions by question type"
+              role="img"
+            ></svg>
+          </div>
           <p class="score-chart-note">
             Questions missed: {{ report.missed_count }}
           </p>
@@ -431,5 +500,113 @@
       </table>
     </div>
   </section>
+
+  <script>
+    (() => {
+      const svg = document.querySelector("[data-score-chart]");
+      const tooltip = document.querySelector("[data-score-chart-tooltip]");
+      if (!svg || !tooltip) {
+        return;
+      }
+
+      const segments = JSON.parse(svg.dataset.chart || "[]");
+      const palette = JSON.parse(svg.dataset.palette || "[]");
+      const cx = 110;
+      const cy = 110;
+      const radius = 92;
+
+      const polarToCartesian = (centerX, centerY, r, angleDeg) => {
+        const angleRad = (angleDeg - 90) * Math.PI / 180;
+        return {
+          x: centerX + r * Math.cos(angleRad),
+          y: centerY + r * Math.sin(angleRad),
+        };
+      };
+
+      const describeArc = (startAngle, endAngle) => {
+        const start = polarToCartesian(cx, cy, radius, endAngle);
+        const end = polarToCartesian(cx, cy, radius, startAngle);
+        const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+        return [
+          `M ${cx} ${cy}`,
+          `L ${start.x} ${start.y}`,
+          `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`,
+          "Z",
+        ].join(" ");
+      };
+
+      const showTooltip = (segment) => {
+        tooltip.innerHTML = `
+          <span class="score-chart-tooltip-title">${segment.category}</span>
+          <span>${segment.missed} question${segment.missed === 1 ? "" : "s"} missed</span>
+        `;
+        tooltip.classList.add("is-visible");
+      };
+
+      const hideTooltip = () => {
+        tooltip.classList.remove("is-visible");
+      };
+
+      if (!segments.length) {
+        const emptyCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        emptyCircle.setAttribute("class", "score-chart-empty");
+        emptyCircle.setAttribute("cx", String(cx));
+        emptyCircle.setAttribute("cy", String(cy));
+        emptyCircle.setAttribute("r", String(radius));
+        svg.appendChild(emptyCircle);
+        return;
+      }
+
+      let currentAngle = 0;
+      segments.forEach((segment, index) => {
+        const color = palette[index % palette.length];
+        const sweep = (segment.share_pct / 100) * 360;
+        let sector;
+
+        if (segments.length === 1 || sweep >= 359.99) {
+          sector = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          sector.setAttribute("cx", String(cx));
+          sector.setAttribute("cy", String(cy));
+          sector.setAttribute("r", String(radius));
+        } else {
+          sector = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          sector.setAttribute("d", describeArc(currentAngle, currentAngle + sweep));
+        }
+
+        sector.setAttribute("class", "score-chart-sector");
+        sector.setAttribute("fill", color);
+        sector.setAttribute("tabindex", "0");
+        sector.setAttribute(
+          "aria-label",
+          `${segment.category}: ${segment.missed} question${segment.missed === 1 ? "" : "s"} missed`
+        );
+
+        const activate = () => {
+          svg.querySelectorAll(".score-chart-sector").forEach((item) => {
+            item.classList.remove("is-active");
+          });
+          sector.classList.add("is-active");
+          showTooltip(segment);
+        };
+
+        const deactivate = () => {
+          sector.classList.remove("is-active");
+          hideTooltip();
+        };
+
+        sector.addEventListener("mouseenter", activate);
+        sector.addEventListener("focus", activate);
+        sector.addEventListener("mouseleave", deactivate);
+        sector.addEventListener("blur", deactivate);
+
+        const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        title.textContent = `${segment.category}: ${segment.missed} question${segment.missed === 1 ? "" : "s"} missed`;
+        sector.appendChild(title);
+
+        svg.appendChild(sector);
+        currentAngle += sweep;
+      });
+    })();
+  </script>
 
 {% endblock %}
