@@ -25,6 +25,48 @@
       margin: 0 0 1.2rem;
     }
 
+    .module-icon-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: center;
+      justify-items: center;
+      padding-top: 0.35rem;
+    }
+
+    .module-icon-tile {
+      width: 100%;
+      display: grid;
+      place-items: center;
+      padding: 0.75rem 0.5rem;
+      border-radius: 1rem;
+      background: #fbfaf7;
+      border: 1px solid #ece5d8;
+    }
+
+    .module-icon-link {
+      text-decoration: none;
+      color: inherit;
+      display: grid;
+      justify-items: center;
+      width: 100%;
+    }
+
+    .module-icon-tile img {
+      width: min(72px, 100%);
+      height: auto;
+      display: block;
+    }
+
+    .module-icon-label {
+      margin-top: 0.65rem;
+      text-align: center;
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.3;
+      color: #27211a;
+    }
+
     .scoring-form-grid {
       display: grid;
       grid-template-columns: 500px auto;
@@ -96,6 +138,10 @@
     }
 
     @media (max-width: 960px) {
+      .module-icon-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
       .scoring-form-grid {
         grid-template-columns: 1fr;
       }
@@ -111,6 +157,10 @@
         margin-top: 110px;
       }
 
+      .module-icon-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .scoring-form-grid .action-field .start-answers-btn {
         width: 100%;
         min-width: 0;
@@ -123,6 +173,27 @@
     <p class="lead">
       Enter your answers to any of the 12 SAT Math modules (provided below), and the app will generate a personalized score report showing your performance question by question, as well as by question type. Each report includes links to video explanations for every question and concept videos for each skill, making it easy to review mistakes and improve efficiently. Hasantutoring members will have access to explanations for all Questions and Question-Types. Non-members can see a limited number of Question-Types and answers to all Questions from Digital Paper Test 1 Module 1.
     </p>
+  </section>
+
+  <section class="card begin-scoring-panel">
+    <h2>SAT Math Modules</h2>
+    <div class="module-icon-grid">
+      {% for test_number in range(1, 7) %}
+        {% for module_number in range(1, 3) %}
+        <div class="module-icon-tile">
+          <a
+            class="module-icon-link"
+            href="https://www.hasantutoring.com/s/SAT-Test-{{ test_number }}-Module-{{ module_number }}.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img src="{{ url_for('static', filename='PDF_Icon.jpg') }}" alt="SAT math module PDF icon" />
+            <div class="module-icon-label">Test {{ test_number }}, Module {{ module_number }}</div>
+          </a>
+        </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
   </section>
 
   <section class="card begin-scoring-panel">
