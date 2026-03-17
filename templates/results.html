@@ -257,6 +257,66 @@
       text-decoration: underline;
     }
 
+    .question-review-hotspot-wrap {
+      position: relative;
+      padding-top: 3.5rem;
+    }
+
+    .question-review-hotspot {
+      position: absolute;
+      top: 0;
+      width: min(270px, 58vw);
+      padding: 0.8rem 0.95rem;
+      border: 1px solid #9dcff7;
+      border-radius: 0.95rem;
+      background: #dff2ff;
+      color: #17324a;
+      font-size: 0.92rem;
+      line-height: 1.35;
+      text-align: left;
+      box-shadow: 0 14px 28px rgba(49, 118, 173, 0.18);
+      cursor: pointer;
+      z-index: 4;
+      animation: hotspot-pulse 1.8s ease-in-out infinite;
+    }
+
+    .question-review-hotspot--number {
+      left: 5.5%;
+    }
+
+    .question-review-hotspot--type {
+      left: 54%;
+    }
+
+    .question-review-hotspot::after {
+      content: "";
+      position: absolute;
+      left: 20px;
+      top: 100%;
+      width: 12px;
+      height: 12px;
+      background: #dff2ff;
+      border-right: 1px solid #9dcff7;
+      border-bottom: 1px solid #9dcff7;
+      transform: translateY(-6px) rotate(45deg);
+    }
+
+    .question-review-hotspot.is-hidden {
+      display: none;
+    }
+
+    @keyframes hotspot-pulse {
+      0%, 100% {
+        transform: translateY(0);
+        box-shadow: 0 14px 28px rgba(49, 118, 173, 0.18);
+      }
+
+      50% {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 34px rgba(49, 118, 173, 0.28);
+      }
+    }
+
     .results-card .table-wrapper.question-breakdown-snapshot {
       overflow-x: auto;
     }
@@ -428,50 +488,68 @@
 
   <section class="card results-card">
     <h3><strong>Question review</strong></h3>
-    <div class="table-wrapper question-review-snapshot">
-      <table class="question-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Your answer</th>
-            <th>Correct answer</th>
-            <th>Question-Type</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in report.per_question %}
-            <tr class="{{ 'correct' if row.is_correct else 'incorrect' }}">
-              <td>
-                {% if question_link_prefix %}
-                  <a
-                    href="{{ question_link_prefix }}{{ row.number }}"
-                    class="question-number-link"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {{ row.number }}
-                  </a>
-                {% else %}
-                  {{ row.number }}
-                {% endif %}
-              </td>
-              <td>{{ row.student_answer }}</td>
-              <td>{{ row.correct_answer }}</td>
-              <td>{{ row.category }}</td>
-              <td>
-                {% if row.is_correct %}
-                  ✅ Correct
-                {% elif not row.raw_student_answer %}
-                  ◻️ Omitted
-                {% else %}
-                  ❌ Incorrect
-                {% endif %}
-              </td>
+    <div class="question-review-hotspot-wrap">
+      <button
+        type="button"
+        class="question-review-hotspot question-review-hotspot--number"
+        data-question-review-hotspot
+        aria-label="Dismiss question review tip"
+      >
+        Click a Question Number to see this quesiton explained
+      </button>
+      <button
+        type="button"
+        class="question-review-hotspot question-review-hotspot--type"
+        data-question-review-hotspot
+        aria-label="Dismiss question type tip"
+      >
+        Click a Question-Type to see this Question-Type explained.
+      </button>
+      <div class="table-wrapper question-review-snapshot">
+        <table class="question-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Your answer</th>
+              <th>Correct answer</th>
+              <th>Question-Type</th>
+              <th>Status</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for row in report.per_question %}
+              <tr class="{{ 'correct' if row.is_correct else 'incorrect' }}">
+                <td>
+                  {% if question_link_prefix %}
+                    <a
+                      href="{{ question_link_prefix }}{{ row.number }}"
+                      class="question-number-link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{ row.number }}
+                    </a>
+                  {% else %}
+                    {{ row.number }}
+                  {% endif %}
+                </td>
+                <td>{{ row.student_answer }}</td>
+                <td>{{ row.correct_answer }}</td>
+                <td>{{ row.category }}</td>
+                <td>
+                  {% if row.is_correct %}
+                    ✅ Correct
+                  {% elif not row.raw_student_answer %}
+                    ◻️ Omitted
+                  {% else %}
+                    ❌ Incorrect
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -605,6 +683,21 @@
 
         svg.appendChild(sector);
         currentAngle += sweep;
+      });
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const hotspots = document.querySelectorAll("[data-question-review-hotspot]");
+      if (!hotspots.length) {
+        return;
+      }
+
+      hotspots.forEach((hotspot) => {
+        hotspot.addEventListener("click", () => {
+          hotspot.classList.add("is-hidden");
+        });
       });
     })();
   </script>
