@@ -240,19 +240,24 @@
       background-color: rgba(248, 113, 113, 0.12);
     }
 
-    .results-card .table-wrapper.question-review-snapshot .question-number-link {
+    .results-card .table-wrapper.question-review-snapshot .question-number-link,
+    .results-card .table-wrapper.question-breakdown-snapshot .question-number-link {
       color: blue;
       font-weight: 600;
       text-decoration: none;
     }
 
-    .results-card .table-wrapper.question-review-snapshot .question-number-link:visited {
+    .results-card .table-wrapper.question-review-snapshot .question-number-link:visited,
+    .results-card .table-wrapper.question-breakdown-snapshot .question-number-link:visited {
       color: purple;
     }
 
     .results-card .table-wrapper.question-review-snapshot .question-number-link:hover,
     .results-card .table-wrapper.question-review-snapshot .question-number-link:focus,
-    .results-card .table-wrapper.question-review-snapshot .question-number-link:active {
+    .results-card .table-wrapper.question-review-snapshot .question-number-link:active,
+    .results-card .table-wrapper.question-breakdown-snapshot .question-number-link:hover,
+    .results-card .table-wrapper.question-breakdown-snapshot .question-number-link:focus,
+    .results-card .table-wrapper.question-breakdown-snapshot .question-number-link:active {
       color: red;
       text-decoration: underline;
     }
@@ -535,7 +540,20 @@
                 </td>
                 <td>{{ row.student_answer }}</td>
                 <td>{{ row.correct_answer }}</td>
-                <td>{{ row.category }}</td>
+                <td>
+                  {% if row.category_video_url %}
+                    <a
+                      href="{{ row.category_video_url }}"
+                      class="question-number-link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{ row.category }}
+                    </a>
+                  {% else %}
+                    {{ row.category }}
+                  {% endif %}
+                </td>
                 <td>
                   {% if row.is_correct %}
                     ✅ Correct
@@ -568,7 +586,20 @@
         <tbody>
           {% for category in report.category_breakdown %}
             <tr>
-              <td>{{ category.category }}</td>
+              <td>
+                {% if category.category_video_url %}
+                  <a
+                    href="{{ category.category_video_url }}"
+                    class="question-number-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ category.category }}
+                  </a>
+                {% else %}
+                  {{ category.category }}
+                {% endif %}
+              </td>
               <td>{{ category.correct }}</td>
               <td>{{ category.total }}</td>
               <td>{{ '%.1f'|format(category.accuracy_pct) }}%</td>

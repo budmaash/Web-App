@@ -36,6 +36,7 @@ class Question:
     category: str
     expects_numeric_response: bool
     db_question_id: Optional[int] = None
+    category_video_url: Optional[str] = None
 
     @property
     def display_correct_answer(self) -> str:
@@ -98,6 +99,7 @@ class QuestionBank:
         self._data_dir = data_dir
         self._questions_cache: Dict[str, List[Question]] = {}
         self._category_lookup = self._load_category_lookup()
+        self._question_type_video_lookup = self._load_question_type_video_lookup()
 
     def available_tests(self) -> List[TestDefinition]:
         return self._available_database_tests()
@@ -237,6 +239,7 @@ class QuestionBank:
                         correct_answers=answers,
                         category=category,
                         expects_numeric_response=expects_numeric_response,
+                        category_video_url=self._question_type_video_lookup.get(category_key),
                     )
                 )
 
@@ -252,7 +255,8 @@ class QuestionBank:
                 q.test_question_number,
                 q.correct_answer,
                 qt.name AS category_name,
-                q.id AS question_id
+                q.id AS question_id,
+                q.question_type_id
             FROM questions q
             JOIN question_types qt ON q.question_type_id = qt.id
             WHERE q.test_id = %s AND q.section_id = %s AND q.module_id = %s
@@ -278,7 +282,7 @@ class QuestionBank:
         if not rows:
             raise ValueError("No questions were found for the selected database test.")
 
-        for test_question_number, correct_answer, category_name, question_id in rows:
+        for test_question_number, correct_answer, category_name, question_id, question_type_id in rows:
             if test_question_number is None:
                 raise ValueError("Each database question must include a test_question_number.")
 
@@ -300,6 +304,9 @@ class QuestionBank:
                     category=category_name,
                     expects_numeric_response=expects_numeric_response,
                     db_question_id=question_id,
+                    category_video_url=self._question_type_video_lookup.get(
+                        _normalize_category_key(str(question_type_id))
+                    ),
                 )
             )
 
@@ -348,10 +355,38 @@ class QuestionBank:
 
         return lookup
 
+    def _load_question_type_video_lookup(self) -> Dict[str, str]:
+        if not DB_ENABLED:
+            return {}
+
+        lookup: Dict[str, str] = {}
+        try:
+            with psycopg2.connect(**DB_CONFIG) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT question_types_id, video_link
+                        FROM "QType_Vids"
+                        WHERE video_link IS NOT NULL
+                        """
+                    )
+                    for question_type_id, video_link in cursor.fetchall():
+                        if question_type_id is None or not video_link:
+                            continue
+                        normalized_key = _normalize_category_key(str(question_type_id))
+                        cleaned_path = str(video_link).strip().lstrip("/")
+                        if cleaned_path:
+                            lookup[normalized_key] = f"https://www.hasantutoring.com/{cleaned_path}"
+        except psycopg2.Error as exc:
+            app.logger.warning("Failed to load question type video links: %s", exc)
+
+        return lookup
+
 
 def build_score_report(student_answers: Dict[int, str], questions: List[Question]):
     per_question = []
     category_totals: Dict[str, Dict[str, int]] = defaultdict(lambda: {"total": 0, "correct": 0})
+    category_video_urls: Dict[str, str] = {}
     missed_totals: Dict[str, int] = defaultdict(int)
     correct_count = 0
 
@@ -360,6 +395,8 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
         is_correct = student_answer in question.correct_answers
 
         category_totals[question.category]["total"] += 1
+        if question.category_video_url and question.category not in category_video_urls:
+            category_video_urls[question.category] = question.category_video_url
         if is_correct:
             correct_count += 1
             category_totals[question.category]["correct"] += 1
@@ -374,6 +411,7 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
                 "correct_answer": question.display_correct_answer,
                 "is_correct": is_correct,
                 "category": question.category,
+                "category_video_url": question.category_video_url,
             }
         )
 
@@ -398,6 +436,7 @@ def build_score_report(student_answers: Dict[int, str], questions: List[Question
                 "correct": correct,
                 "total": total,
                 "accuracy_pct": accuracy_pct,
+                "category_video_url": category_video_urls.get(category),
             }
         )
 
