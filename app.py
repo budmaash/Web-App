@@ -19,13 +19,14 @@ from flask import Flask, abort, redirect, render_template, request, url_for
 DATA_DIR = Path("data")
 CATEGORY_DB_DIR = DATA_DIR / "category_db"
 DB_CONFIG = {
-    "host": os.environ.get("SAT_DB_HOST", "localhost"),
-    "port": int(os.environ.get("SAT_DB_PORT", "5432")),
-    "user": os.environ.get("SAT_DB_USER", "postgres"),
-    "password": os.environ.get("SAT_DB_PASSWORD", "3rdtrail"),
-    "dbname": os.environ.get("SAT_DB_NAME", "SAT_Database"),
+    "host": os.environ.get("DB_HOST", "localhost"),
+    "port": int(os.environ.get("DB_PORT", "5432")),
+    "user": os.environ.get("DB_USER", "postgres"),
+    "password": os.environ.get("DB_PASSWORD", "3rdtrail"),
+    "dbname": os.environ.get("DB_NAME", "WebApp"),
 }
-DB_ENABLED = os.environ.get("SAT_DB_ENABLED", "1") not in {"0", "false", "False"}
+DB_ENABLED = os.environ.get("DB_ENABLED", "1") not in {"0", "false", "False"}
+SUBMISSION_PERSISTENCE_ENABLED = False
 MULTIPLE_CHOICE_CHOICES = ("A", "B", "C", "D")
 
 
@@ -573,7 +574,7 @@ def _persist_submission(
     answers: Dict[int, str],
     report,
 ) -> None:
-    if not DB_ENABLED:
+    if not DB_ENABLED or not SUBMISSION_PERSISTENCE_ENABLED:
         return
 
     payload_answers = json.dumps(answers)
