@@ -50,9 +50,9 @@ This project provides a lightweight web application for entering student respons
 
 Visit <http://127.0.0.1:5000> in your browser.
 
-## Database logging & dynamic tests (optional)
+## Database-backed tests
 
-When a local PostgreSQL instance is running, the app now does two things:
+When PostgreSQL is enabled, the app does two things:
 
 1. **Exposes database-backed tests.** Each combination of entries from the
    `tests`, `sections`, and `modules` tables produces a selectable exam—for
@@ -75,28 +75,44 @@ user=postgres
 password=3rdtrail
 ```
 
-Override any value by exporting `SAT_DB_HOST`, `SAT_DB_PORT`, `SAT_DB_NAME`,
-`SAT_DB_USER`, `SAT_DB_PASSWORD`, or disable all database features with
-`SAT_DB_ENABLED=0`.
+Local configuration defaults:
 
-Create the destination table before running the app:
+- `DB_HOST=localhost`
+- `DB_PORT=5432`
+- `DB_NAME=WebApp`
+- `DB_USER=postgres`
+- `DB_PASSWORD=3rdtrail`
+- `DB_ENABLED=1`
+- `DB_SSLMODE=prefer`
 
-```sql
-CREATE TABLE IF NOT EXISTS submissions (
-  id SERIAL PRIMARY KEY,
-  test_code TEXT NOT NULL,
-  student_name TEXT NOT NULL,
-  answers_json JSONB NOT NULL,
-  results_json JSONB NOT NULL,
-  category_json JSONB NOT NULL,
-  raw_correct INTEGER NOT NULL,
-  raw_total INTEGER NOT NULL,
-  scaled_score INTEGER NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+The app also supports a single `DATABASE_URL` environment variable. If `DATABASE_URL`
+is set, it takes precedence over the individual `DB_*` variables. This is the
+recommended configuration for Render Postgres.
 
-CREATE INDEX IF NOT EXISTS ix_submissions_test_code ON submissions (test_code);
-```
+Submission writes are currently disabled in code, so this version reads from the
+database but does not insert rows into `submissions`.
+
+## Deploying to Render
+
+This branch includes a [render.yaml](/Users/majidhasan/Documents/WebApp/render.yaml)
+blueprint that provisions:
+
+- a Python web service named `webapp`
+- a Render Postgres database named `WebApp`
+
+The web service receives `DATABASE_URL` from the Render Postgres
+`connectionString` and sets `DB_SSLMODE=require`.
+
+To deploy:
+
+1. Push the `webapp_db` branch to GitHub.
+2. In Render, create a new Blueprint service from the repository.
+3. Select the branch that contains this `render.yaml`.
+4. Render will create both the web service and the `WebApp` Postgres database.
+
+If you already created the database manually in Render, you can skip the
+blueprint database creation and instead set `DATABASE_URL` on the web service to
+the database's internal connection string.
 
 ## Customising the answer keys
 

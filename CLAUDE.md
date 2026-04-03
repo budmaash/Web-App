@@ -54,9 +54,11 @@ Templates extend `templates/base.html`. Page-specific styles are embedded as `<s
 ### Environment variables
 | Variable | Default |
 |---|---|
+| `DATABASE_URL` | unset; when present, overrides individual DB connection fields |
 | `DB_HOST` | `localhost` |
 | `DB_PORT` | `5432` |
 | `DB_USER` | `postgres` |
 | `DB_PASSWORD` | `3rdtrail` |
 | `DB_NAME` | `WebApp` |
 | `DB_ENABLED` | `1` (set to `0` to disable all DB features) |
+| `DB_SSLMODE` | `prefer` locally; set to `require` on Render |

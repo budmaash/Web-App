@@ -11,6 +11,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from urllib.parse import parse_qsl, urlparse
 
 import psycopg2
 from flask import Flask, abort, redirect, render_template, request, url_for
@@ -18,6 +19,8 @@ from flask import Flask, abort, redirect, render_template, request, url_for
 
 DATA_DIR = Path("data")
 CATEGORY_DB_DIR = DATA_DIR / "category_db"
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+DB_SSLMODE = os.environ.get("DB_SSLMODE", "prefer").strip()
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST", "localhost"),
     "port": int(os.environ.get("DB_PORT", "5432")),
@@ -28,6 +31,20 @@ DB_CONFIG = {
 DB_ENABLED = os.environ.get("DB_ENABLED", "1") not in {"0", "false", "False"}
 SUBMISSION_PERSISTENCE_ENABLED = False
 MULTIPLE_CHOICE_CHOICES = ("A", "B", "C", "D")
+
+
+def _database_url_has_sslmode(database_url: str) -> bool:
+    parsed = urlparse(database_url)
+    return "sslmode" in dict(parse_qsl(parsed.query, keep_blank_values=True))
+
+
+def connect_to_database():
+    if DATABASE_URL:
+        if _database_url_has_sslmode(DATABASE_URL):
+            return psycopg2.connect(DATABASE_URL)
+        return psycopg2.connect(DATABASE_URL, sslmode=DB_SSLMODE)
+
+    return psycopg2.connect(**DB_CONFIG, sslmode=DB_SSLMODE)
 
 
 @dataclass
@@ -132,7 +149,7 @@ class QuestionBank:
             return tests
 
         try:
-            with psycopg2.connect(**DB_CONFIG) as conn:
+            with connect_to_database() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
@@ -266,7 +283,7 @@ class QuestionBank:
 
         questions: List[Question] = []
         try:
-            with psycopg2.connect(**DB_CONFIG) as conn:
+            with connect_to_database() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         query,
@@ -362,7 +379,7 @@ class QuestionBank:
 
         lookup: Dict[str, str] = {}
         try:
-            with psycopg2.connect(**DB_CONFIG) as conn:
+            with connect_to_database() as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
@@ -583,7 +600,7 @@ def _persist_submission(
     created_at = datetime.utcnow()
 
     try:
-        with psycopg2.connect(**DB_CONFIG) as conn:
+        with connect_to_database() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
